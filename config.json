@@ -1,0 +1,18 @@
+{
+    "prefix": "!",
+    "listen-channel": "test-bot",
+    "messages": {
+        "INVALID_COMMAND": "Debes ingresar un comando valido :( !",
+        "MOVE_SUCCESS": "Moviendo al pete",
+        "NOT_FOUND_MEMBER": "Usuario no encontrado :(",
+        "NOT_FOUND_CHANNEL": "No pude encontrar el canal :(",
+        "NOT_VOICE_CHANNEL": "El canal de destino no es de voz :(",
+        "NOT_VOICE_PERMISSION": "No tengo permisos para reproducir musica :(",
+        "MEMBER_NOT_IN_VOICE_CHANNEL": "Debes estar en un canal de voz para modificar la musica",
+        "MOVE_REASON": "Me lo pidio {0}",
+        "ADD_SONG": "{0} ha sido añadida a la cola",
+        "EMPTY_QUEUE": "No hay mas canciones en la cola, no hay nada que saltar",
+        "PLAY_SONG": "Reproduciendo: {0} jijiji"
+
+    }
+}

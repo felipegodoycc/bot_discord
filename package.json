@@ -24,8 +24,13 @@
   "homepage": "https://github.com/felipegodoycc/bot_discord#readme",
   "dependencies": {
     "dialogflow": "^1.2.0",
+    "@discordjs/opus": "^0.3.2",
     "discord.js": "^12.2.0",
     "dotenv": "^8.2.0",
-    "nodemon": "^2.0.4"
+    "ffmpeg": "0.0.4",
+    "ffmpeg-binaries": "^3.2.2-3",
+    "fluent-ffmpeg": "^2.1.2",
+    "nodemon": "^2.0.4",
+    "ytdl-core": "^2.1.3"
   }
 }

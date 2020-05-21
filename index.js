@@ -5,6 +5,14 @@ const { prefix, messages} = require('./config.json');
 const ytdl = require("ytdl-core");
 const queue = new Map();
 
+String.prototype.format = function() {
+  a = this;
+  for (k in arguments) {
+    a = a.replace("{" + k + "}", arguments[k])
+  }
+  return a
+}
+
 client.login(process.env.TOKEN_DISCORD_BOT);
 
 client.on('ready', () => {
@@ -27,7 +35,7 @@ client.on('message', async (message) => {
             const channel = member.guild.channels.cache.find( channel => channel.name === nameChannel.trim())
             if(channel){
                 if(channel.type === 'voice') {
-                    member.voice.setChannel(channel.id, `Me lo pidio ${message.author.tag}`);
+                    member.voice.setChannel(channel.id, messages.MOVE_REASON.format(message.author.tag));
                     message.channel.send(messages.MOVE_SUCCESS);
                 }
                 else message.reply(messages.NOT_VOICE_CHANNEL)
@@ -91,7 +99,7 @@ async function execute(message, serverQueue) {
       }
     } else {
       serverQueue.songs.push(song);
-      return message.channel.send(`${song.title} has been added to the queue!`);
+      return message.channel.send(messages.ADD_SONG.format(song.title));
     }
   }
   
@@ -99,7 +107,7 @@ async function execute(message, serverQueue) {
     if (!message.member.voice.channel)
       return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
     if (!serverQueue)
-      return message.channel.send("There is no song that I could skip!");
+      return message.channel.send(messages.EMPTY_QUEUE);
     serverQueue.connection.dispatcher.end();
   }
   
@@ -126,6 +134,6 @@ async function execute(message, serverQueue) {
       })
       .on("error", error => console.error(error));
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-    serverQueue.textChannel.send(`Reproduciendo: **${song.title}** jijijiji`);
+    serverQueue.textChannel.send(messages.PLAY_SONG.format(song.title));
   }
   

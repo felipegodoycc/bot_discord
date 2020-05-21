@@ -1,0 +1,23 @@
+{
+  "name": "bot_discord",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felipegodoycc/bot_discord.git"
+  },
+  "keywords": [
+    "bot",
+    "discord"
+  ],
+  "author": "Felipe Godoy Cerda",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/felipegodoycc/bot_discord/issues"
+  },
+  "homepage": "https://github.com/felipegodoycc/bot_discord#readme"
+}

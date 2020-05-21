@@ -1,5 +1,9 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
+const dialogFlow = require('dialogflow')
+
+const dialogFlowClient = new dialogFlow.SessionsClient();
+const sessionPath = dialogFlowClient.sessionPath('bot-discord-ipijxl', 'bot-discord');
 
 client.login(process.env.TOKEN_DISCORD_BOT);
 
@@ -27,4 +31,23 @@ client.on('message', (message) => {
             }
         }
     }
+    const cleanMessage = remove(client.user.username, message.cleanContent);
+
+    const dialogflowRequest = {
+        session: sessionPath,
+        queryInput: {
+          text: {
+            text: message,
+            languageCode: 'es-ES'
+          }
+        }
+      };
+    
+      dialogFlowClient.detectIntent(dialogflowRequest).then(responses => {
+        message.channel.send(responses[0].queryResult.fulfillmentText);
+      });
 })
+
+function remove(username, text) {
+    return text.replace('@' + username + ' ', '').replace('!' + ' ', '');
+  }

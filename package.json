@@ -19,5 +19,9 @@
   "bugs": {
     "url": "https://github.com/felipegodoycc/bot_discord/issues"
   },
-  "homepage": "https://github.com/felipegodoycc/bot_discord#readme"
+  "homepage": "https://github.com/felipegodoycc/bot_discord#readme",
+  "dependencies": {
+    "discord.js": "^12.2.0",
+    "dotenv": "^8.2.0"
+  }
 }

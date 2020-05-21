@@ -6,6 +6,8 @@
         "MOVE_SUCCESS": "Moviendo al pete",
         "NOT_FOUND_MEMBER": "Usuario no encontrado :(",
         "NOT_FOUND_CHANNEL": "No pude encontrar el canal :(",
-        "NOT_VOICE_CHANNEL": "El canal de destino no es de voz :("
+        "NOT_VOICE_CHANNEL": "El canal de destino no es de voz :(",
+        "NOT_VOICE_PERMISSION": "No tengo permisos para reproducir musica :(",
+        "MEMBER_NOT_IN_VOICE_CHANNEL": "Debes estar en un canal de voz para modificar la musica"
     }
 }

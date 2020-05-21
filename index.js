@@ -52,9 +52,11 @@ client.on('message', async(message) => {
 })
 
 async function execute(message, serverQueue) {
-    // /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
     const args = message.content.split(" ");
-
+    let isurl = (data) => {
+        return /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(data);
+    }
+    console.log("idvideo", ytdl.getURLVideoID(args[1]));
     const voiceChannel = message.member.voice.channel;
     if (!voiceChannel)
         return message.channel.send(messages.NOT_VOICE_CHANNEL);

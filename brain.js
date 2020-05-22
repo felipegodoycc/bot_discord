@@ -9,6 +9,8 @@ function removePrefix(text) {
 
 brain = async (client, message) => {
     return new Promise( async (resolve, reject) => {
+        const mentions = message.mentions.users;
+        console.log("Menciones: ", mentions);
         const cleanMessage = removePrefix(message.cleanContent);
         console.log("Mensaje: ", cleanMessage)
         
@@ -25,6 +27,8 @@ brain = async (client, message) => {
         const responses = await dialogFlowClient.detectIntent(dialogflowRequest);
     
         console.log('Respuesta dialogflow: ', responses[0].queryResult);
+        console.log('Params: ', responses[0].queryResult.parameters.fields);
+
         const respuesta = responses[0].queryResult.fulfillmentText;
         if(respuesta != ''){
             message.channel.send(responses[0].queryResult.fulfillmentText);

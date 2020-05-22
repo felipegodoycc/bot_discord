@@ -1,9 +1,11 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const dialogFlow = require('dialogflow')
+const ytdl = require('ytdl-core');
+const { prefix, messages } = require('./config.json')
 
-const dialogFlowClient = new dialogFlow.SessionsClient();
-const sessionPath = dialogFlowClient.sessionPath('bot-discord-ipijxl', 'bot-discord');
+const { brain } = require('./brain');
+
+const queue = new Map();
 
 client.login(process.env.TOKEN_DISCORD_BOT);
 
@@ -16,10 +18,8 @@ client.on('message', async(message) => {
     if (!message.content.startsWith(prefix)) return;
 
     const serverQueue = queue.get(message.guild.id);
-
-    if (message.content === `${prefix}ping`) {
-        message.channel.send("pong")
-    } else if (message.content.startsWith(`${prefix}mueve`)) {
+    
+    if (message.content.startsWith(`${prefix}mueve`)) {
         const user = message.mentions.users.first();
         if (user) {
             const member = message.guild.member(user);
@@ -45,21 +45,16 @@ client.on('message', async(message) => {
         stop(message, serverQueue);
         return;
     } else {
-        const cleanMessage = remove(client.user.username, message.cleanContent);
-    
-        const dialogflowRequest = {
-            session: sessionPath,
-            queryInput: {
-              text: {
-                text: message,
-                languageCode: 'es-ES'
-              }
-            }
-          };
-        
-          dialogFlowClient.detectIntent(dialogflowRequest).then(responses => {
-            message.channel.send(responses[0].queryResult.fulfillmentText);
-          });        
+        brain(client, message)
+            .then(responses => {
+                console.log('Respuesta dialogflow: ', responses[0]);
+                const respuesta = responses[0].queryResult.fulfillmentText;
+                if(respuesta != ''){
+                    message.channel.send(responses[0].queryResult.fulfillmentText, { tts: true });
+                }
+                message.channel.send(messages.NOT_RESPONSE, { tts: true });
+            })
+            .catch( err => console.error );
     }
 
 })
@@ -111,6 +106,4 @@ async function execute(message, serverQueue) {
     }
 }
 
-function remove(username, text) {
-    return text.replace('@' + username + ' ', '').replace('!' + ' ', '');
-  }
+

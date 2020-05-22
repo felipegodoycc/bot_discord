@@ -19,7 +19,7 @@ client.on('message', async(message) => {
 
     const serverQueue = queue.get(message.guild.id);
     
-    if (message.content.startsWith(`${prefix}mueve`)) {
+    if (message.content.startsWith(`${prefix}move`)) {
         const user = message.mentions.users.first();
         if (user) {
             const member = message.guild.member(user);
@@ -45,16 +45,7 @@ client.on('message', async(message) => {
         stop(message, serverQueue);
         return;
     } else {
-        brain(client, message)
-            .then(responses => {
-                console.log('Respuesta dialogflow: ', responses[0]);
-                const respuesta = responses[0].queryResult.fulfillmentText;
-                if(respuesta != ''){
-                    message.channel.send(responses[0].queryResult.fulfillmentText, { tts: true });
-                }
-                message.channel.send(messages.NOT_RESPONSE, { tts: true });
-            })
-            .catch( err => console.error );
+        await brain(client, message);
     }
 
 })

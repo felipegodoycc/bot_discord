@@ -12,7 +12,8 @@
         "MOVE_REASON": "Me lo pidio {0}",
         "ADD_SONG": "{0} ha sido añadida a la cola",
         "EMPTY_QUEUE": "No hay mas canciones en la cola, no hay nada que saltar",
-        "PLAY_SONG": "Reproduciendo: {0} jijiji"
+        "PLAY_SONG": "Reproduciendo: {0} jijiji",
+        "NOT_RESPONSE": "No tengo respuesta para eso, pete"
 
     }
 }

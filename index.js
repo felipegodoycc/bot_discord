@@ -59,11 +59,15 @@ client.on('message', async(message) => {
 })
 
 async function execute(message, serverQueue) {
-    const args = message.content.split(" ");
-    let isurl = (data) => {
-        return /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(data);
+    const args = message.content.replace("!play", "").trim();
+    let link = "";
+    if (!isurl(args)) {
+        link = await getLink(args);
+    } else {
+        link = args;
     }
-    console.log("idvideo", ytdl.getURLVideoID(args[1]));
+
+
     const voiceChannel = message.member.voice.channel;
     if (!voiceChannel)
         return message.channel.send(messages.NOT_VOICE_CHANNEL);
@@ -72,7 +76,7 @@ async function execute(message, serverQueue) {
         return message.channel.send(messages.NOT_VOICE_PERMISSION);
     }
 
-    const songInfo = await ytdl.getInfo(args[1]);
+    const songInfo = await ytdl.getInfo(link);
     const song = {
         title: songInfo.title,
         url: songInfo.video_url
@@ -139,4 +143,23 @@ function play(guild, song) {
         .on("error", error => console.error(error));
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
     serverQueue.textChannel.send(messages.PLAY_SONG.format(song.title));
+}
+
+const isurl = (data) => {
+    return /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(data);
+}
+
+const getLink = (searchs) => {
+    return new Promise((resolve) => {
+        ytsr.getFilters(searchs).then(async(response) => {
+            let filter = response.get('Type').find(o => o.name === 'Video');
+            let options = {
+                limit: 5,
+                nextpageRef: filter.ref,
+            }
+            let results = await ytsr(null, options);
+            resolve(results.items[0].link)
+        });
+    })
+
 }

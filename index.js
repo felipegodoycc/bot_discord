@@ -3,14 +3,15 @@ const client = new Discord.Client();
 const { prefix, messages } = require('./config.json');
 
 const ytdl = require("ytdl-core");
+const ytsr = require('ytsr');
 const queue = new Map();
 
 String.prototype.format = function() {
-  a = this;
-  for (k in arguments) {
-    a = a.replace("{" + k + "}", arguments[k])
-  }
-  return a
+    a = this;
+    for (k in arguments) {
+        a = a.replace("{" + k + "}", arguments[k])
+    }
+    return a
 }
 
 client.login(process.env.TOKEN_DISCORD_BOT);
@@ -33,9 +34,9 @@ client.on('message', async(message) => {
             const member = message.guild.member(user);
             console.log(member);
             const nameChannel = message.content.split("!to")[1];
-            const channel = member.guild.channels.cache.find( channel => channel.name === nameChannel.trim())
-            if(channel){
-                if(channel.type === 'voice') {
+            const channel = member.guild.channels.cache.find(channel => channel.name === nameChannel.trim())
+            if (channel) {
+                if (channel.type === 'voice') {
                     member.voice.setChannel(channel.id, messages.MOVE_REASON.format(message.author.tag));
                     message.channel.send(messages.MOVE_SUCCESS);
                 } else message.reply(messages.NOT_VOICE_CHANNEL)
@@ -101,8 +102,8 @@ async function execute(message, serverQueue) {
             return message.channel.send(err);
         }
     } else {
-      serverQueue.songs.push(song);
-      return message.channel.send(messages.ADD_SONG.format(song.title));
+        serverQueue.songs.push(song);
+        return message.channel.send(messages.ADD_SONG.format(song.title));
     }
 }
 
@@ -110,7 +111,7 @@ function skip(message, serverQueue) {
     if (!message.member.voice.channel)
         return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
     if (!serverQueue)
-      return message.channel.send(messages.EMPTY_QUEUE);
+        return message.channel.send(messages.EMPTY_QUEUE);
     serverQueue.connection.dispatcher.end();
 }
 
@@ -138,5 +139,4 @@ function play(guild, song) {
         .on("error", error => console.error(error));
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
     serverQueue.textChannel.send(messages.PLAY_SONG.format(song.title));
-  }
-  
+}

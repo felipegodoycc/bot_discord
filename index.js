@@ -1,7 +1,6 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const ytdl = require('ytdl-core');
-const { prefix, messages } = require('./config.json')
+const { prefix, messages, listenChannel } = require('./config.json')
 
 const { brain } = require('./brain');
 
@@ -24,40 +23,29 @@ client.on('ready', () => {
 })
 
 client.on('message', async(message) => {
-    if (message.author.bot) return;
-    if (!message.content.startsWith(prefix)) return;
-
-    const serverQueue = queue.get(message.guild.id);
+    try {
+        if(message.author.bot) return;
+        if(!message.content.startsWith(prefix)) return;
+        if(message.channel.name != listenChannel) return;
     
-    // if (message.content.startsWith(`${prefix}move`)) {
-    //     const user = message.mentions.users.first();
-    //     if (user) {
-    //         const member = message.guild.member(user);
-    //         console.log(member);
-    //         const nameChannel = message.content.split("!to")[1];
-    //         const channel = member.guild.channels.cache.find( channel => channel.name === nameChannel.trim())
-    //         if(channel){
-    //             if(channel.type === 'voice') {
-    //                 member.voice.setChannel(channel.id, messages.MOVE_REASON.format(message.author.tag));
-    //                 message.channel.send(messages.MOVE_SUCCESS);
-    //             } else message.reply(messages.NOT_VOICE_CHANNEL)
-    //         } else {
-    //             message.reply(messages.NOT_FOUND_CHANNEL)
-    //         }
-    //     }
-    if (message.content.startsWith(`${prefix}play`)) {
-        execute(message, serverQueue);
-        return;
-    } else if (message.content.startsWith(`${prefix}skip`)) {
-        skip(message, serverQueue);
-        return;
-    } else if (message.content.startsWith(`${prefix}stop`)) {
-        stop(message, serverQueue);
-        return;
-    } else {
-        await brain(client, message);
+        const serverQueue = queue.get(message.guild.id);
+        
+        if (message.content.startsWith(`${prefix}play`)) {
+            execute(message, serverQueue);
+            return;
+        } else if (message.content.startsWith(`${prefix}skip`)) {
+            skip(message, serverQueue);
+            return;
+        } else if (message.content.startsWith(`${prefix}stop`)) {
+            stop(message, serverQueue);
+            return;
+        } else {
+            await brain(client, message);
+        }
+    } catch (error) {
+        console.log("Error: ", error);
+        message.channel.send(messages.ERROR);         
     }
-
 })
 
 async function execute(message, serverQueue) {

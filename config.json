@@ -1,9 +1,9 @@
 {
     "prefix": "!",
-    "listen-channel": "test-bot",
+    "listenChannel": "test-bot",
     "messages": {
         "INVALID_COMMAND": "Debes ingresar un comando valido :( !",
-        "MOVE_SUCCESS": "Moviendo al pete",
+        "MOVE_SUCCESS": "Listo, movido",
         "NOT_FOUND_MEMBER": "Usuario no encontrado :(",
         "NOT_FOUND_CHANNEL": "No pude encontrar el canal :(",
         "NOT_VOICE_CHANNEL": "El canal de destino no es de voz :(",
@@ -13,7 +13,8 @@
         "ADD_SONG": "{0} ha sido añadida a la cola",
         "EMPTY_QUEUE": "No hay mas canciones en la cola, no hay nada que saltar",
         "PLAY_SONG": "Reproduciendo: {0} jijiji",
-        "NOT_RESPONSE": "No tengo respuesta para eso, pete"
-
+        "NOT_RESPONSE": "No tengo respuesta para eso, pete",
+        "ERROR": "Changos, algo salio mal :(",
+        "NOT_USER_FIND": "no pude encontrar al loquito"
     }
 }

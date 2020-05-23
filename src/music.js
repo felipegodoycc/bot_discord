@@ -1,8 +1,15 @@
-const ytdl = require("ytdl-core");
-const ytsr = require('ytsr');
+import ytdl, { getInfo } from "ytdl-core";
+import ytsr, { getFilters } from 'ytsr';
+import { messages } from './config.json';
+ 
 const queue = new Map();
+let serverQueue;
 
-module.exports = async function execute(message, serverQueue) {
+export const initMusicModule = (message) => {
+    serverQueue = queue.get(message.guild.id);
+}
+
+export async function execute(message) {
     const args = message.content.replace("!play", "").trim();
     let link = "";
     if (!isurl(args)) {
@@ -20,7 +27,7 @@ module.exports = async function execute(message, serverQueue) {
         return message.channel.send(messages.NOT_VOICE_PERMISSION);
     }
 
-    const songInfo = await ytdl.getInfo(link);
+    const songInfo = await getInfo(link);
     const song = {
         title: songInfo.title,
         url: songInfo.video_url
@@ -55,7 +62,7 @@ module.exports = async function execute(message, serverQueue) {
     }
 }
 
-module.exports = function skip(message, serverQueue) {
+export function skip(message) {
     if (!message.member.voice.channel)
         return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
     if (!serverQueue)
@@ -63,14 +70,14 @@ module.exports = function skip(message, serverQueue) {
     serverQueue.connection.dispatcher.end();
 }
 
-module.exports = function stop(message, serverQueue) {
+export function stop(message) {
     if (!message.member.voice.channel)
         return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
     serverQueue.songs = [];
     serverQueue.connection.dispatcher.end();
 }
 
-module.exports = function play(guild, song) {
+export function play(guild, song) {
     const serverQueue = queue.get(guild.id);
     if (!song) {
         serverQueue.voiceChannel.leave();
@@ -95,7 +102,7 @@ const isurl = (data) => {
 
 const getLink = (searchs) => {
     return new Promise((resolve) => {
-        ytsr.getFilters(searchs).then(async(response) => {
+        getFilters(searchs).then(async(response) => {
             let filter = response.get('Type').find(o => o.name === 'Video');
             let options = {
                 limit: 5,

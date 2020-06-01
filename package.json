@@ -6,6 +6,7 @@
   "scripts": {
     "start": "babel-node -r dotenv/config src/index.js",
     "dev": "nodemon --exec babel-node -r dotenv/config src/index.js",
+    "lint": "eslint src/.",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -32,6 +33,7 @@
     "ffmpeg-binaries": "^3.2.2-3",
     "fluent-ffmpeg": "^2.1.2",
     "nodemon": "^2.0.4",
+    "uuid": "^8.1.0",
     "ytdl-core": "^2.1.3",
     "ytsr": "^0.1.14"
   },

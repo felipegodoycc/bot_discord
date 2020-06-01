@@ -15,6 +15,7 @@
         "PLAY_SONG": "Reproduciendo: {0} jijiji",
         "NOT_RESPONSE": "No tengo respuesta para eso, pete",
         "ERROR": "Changos, algo salio mal :(",
-        "NOT_USER_FIND": "no pude encontrar al loquito"
+        "NOT_USER_FIND": "no pude encontrar al loquito",
+        "NOT_INTENT_EXIST": "No cacho de esa wea"
     }
 }

@@ -2,9 +2,10 @@ import "@babel/polyfill";
 import { Client } from "discord.js";
 import { prefix, messages, listenChannel } from "./config.json";
 import { execute, skip, stop, initMusicModule } from "./music";
-import { brain } from "./brain"
+import { ChatBot } from "./brain";
 
 const client = new Client();
+const chatBot = new ChatBot(process.env.DIALOG_FLOW_PROJECT, client);
 
 String.prototype.format = function () {
     let a = this;
@@ -30,16 +31,15 @@ client.on("message", async (message) => {
             initMusicModule(message);
             execute(message);
             return;
-        }
-        if (message.content.startsWith(`${prefix}skip`)) {
+        } else if (message.content.startsWith(`${prefix}skip`)) {
             skip(message);
             return;
-        }
-        if (message.content.startsWith(`${prefix}stop`)) {
+        } else if (message.content.startsWith(`${prefix}stop`)) {
             stop(message);
             return;
+        } else {
+            await chatBot.getResponse(message);
         }
-        await brain(client, message);
     } catch (error) {
         console.log("Error: ", error);
         message.channel.send(messages.ERROR);

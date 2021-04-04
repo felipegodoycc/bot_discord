@@ -26,7 +26,7 @@
   "dependencies": {
     "@babel/polyfill": "^7.8.7",
     "@discordjs/opus": "^0.3.2",
-    "dialogflow": "^1.2.0",
+    "dialogflow": "^4.0.3",
     "discord.js": "^12.2.0",
     "dotenv": "^8.2.0",
     "ffmpeg": "0.0.4",

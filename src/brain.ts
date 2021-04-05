@@ -1,18 +1,22 @@
-import { SessionsClient } from 'dialogflow';
-import { messages } from './config.json';
+import { SessionsClient } from '@google-cloud/dialogflow';
+import { messages } from './config';
 import { v4 } from 'uuid';
+import { Message } from 'discord.js';
 
-export class ChatBot {    
-    constructor(dialogFlowProject,discordClient){
+export class ChatBot {
+    private uuid: string;
+    private dialogFlowClient: SessionsClient;
+    private sessionPath:string;
+
+    constructor(dialogFlowProject){
         this.uuid = v4();
-        this.discordClient = discordClient;
         this.dialogFlowClient = new SessionsClient();
-        this.sessionPath = this.dialogFlowClient.sessionPath(dialogFlowProject, this.uuid );
+        this.sessionPath = this.dialogFlowClient.projectAgentSessionPath(dialogFlowProject, this.uuid );
         console.log("DialogFlow inicializado")
     }
 
-    getResponse(message) {
-        return new Promise(async (resolve, reject) => {
+    getResponse(message): Promise<void> {
+        return new Promise(async (resolve) => {
             const cleanMessage = this.removePrefix(message.cleanContent)
             
             const dialogflowRequest = {
@@ -33,16 +37,16 @@ export class ChatBot {
             this.actions(message, response)
                 .then( msg => message.channel.send(msg))
                 .catch( error => message.channel.send(error))
-            })
             resolve()
+        })
     }
 
-    actions(message, response){
+    actions(message: Message, response){
         return new Promise( (resolve, reject) => {
             const { intent } = response.queryResult;
             if (intent) {
                 if (intent.displayName === 'discord.mover') {
-                    const user = this.getMention(mentions, 'users');
+                    const user = this.getMention(message.mentions, 'users');
                     this.getChannelFromResponse(message, response)
                         .then((channel) => moverUsuario(message, user, channel))
                         .then( msg => resolve(msg))
@@ -83,7 +87,7 @@ export class ChatBot {
 
 }
 
-const moverUsuario = (message, user, channel) => {
+const moverUsuario = (message: Message, user, channel) => {
     return new Promise( (resolve, reject) => {
         const member = message.guild.member(user)
         // console.log(user, channel)

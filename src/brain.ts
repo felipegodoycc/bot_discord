@@ -1,21 +1,22 @@
 import { SessionsClient } from '@google-cloud/dialogflow';
 import { messages } from './config';
 import { v4 } from 'uuid';
-import { Message } from 'discord.js';
+import { Channel, Message, MessageMentions, UserResolvable } from 'discord.js';
+import { google } from '@google-cloud/dialogflow/build/protos/protos';
 
 export class ChatBot {
     private uuid: string;
     private dialogFlowClient: SessionsClient;
     private sessionPath:string;
 
-    constructor(dialogFlowProject){
+    constructor(dialogFlowProject: string){
         this.uuid = v4();
         this.dialogFlowClient = new SessionsClient();
         this.sessionPath = this.dialogFlowClient.projectAgentSessionPath(dialogFlowProject, this.uuid );
         console.log("DialogFlow inicializado")
     }
 
-    getResponse(message): Promise<void> {
+    getResponse(message: Message): Promise<void> {
         return new Promise(async (resolve) => {
             const cleanMessage = this.removePrefix(message.cleanContent)
             
@@ -41,7 +42,7 @@ export class ChatBot {
         })
     }
 
-    actions(message: Message, response){
+    actions(message: Message, response: google.cloud.dialogflow.v2.IDetectIntentResponse){
         return new Promise( (resolve, reject) => {
             const { intent } = response.queryResult;
             if (intent) {
@@ -67,27 +68,27 @@ export class ChatBot {
     }
     
             
-    getChannelFromResponse(message, response) {
+    getChannelFromResponse(message: Message, response ) : Promise<Channel> {
         return new Promise((resolve, reject) => {
             const nameChannel = response.queryResult.parameters.fields.salaDiscord.stringValue.replace('canal ','');
-            const channel = message.guild.channels.cache.find( (channel) => channel.name === nameChannel.trim() );    
+            const channel = message.guild.channels.cache.find( (channel: { name: any; }) => channel.name === nameChannel.trim() );    
             if (!channel) reject(messages.NOT_FOUND_CHANNEL)
             else resolve(channel)
         })
     }
                     
-    getMention(mentions, type) {
+    getMention(mentions: MessageMentions, type: string) {
         const filters = mentions[type]
         return filters.size > 0 ? filters.first() : undefined
     }
                     
-    removePrefix(text) {
+    removePrefix(text: string) {
         return text.replace('!', '')
     }   
 
 }
 
-const moverUsuario = (message: Message, user, channel) => {
+const moverUsuario = (message: Message, user: UserResolvable, channel: Channel) => {
     return new Promise( (resolve, reject) => {
         const member = message.guild.member(user)
         // console.log(user, channel)

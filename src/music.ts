@@ -1,9 +1,9 @@
-import { Message } from 'discord.js';
+import { Guild, Message } from 'discord.js';
 import ytdl from 'ytdl-core-discord';
 import ytsr from 'ytsr';
 import { messages } from './config';
-import { QueueItem } from './types/queue.type';
-import { Song } from './types/song.type';
+import { QueueItem } from './types/queue.d';
+import { Song } from './types/song.d';
 
 export class MusicBot {
 
@@ -12,12 +12,13 @@ export class MusicBot {
     constructor(){
     }
 
-    getServerQueue(message: Message){
-        return this.queue.get(message.guild.id);
+    getServerQueue(guild){
+        console.log("ID: ", guild.id)
+        return this.queue.get(guild.id);
     }
 
     async execute(message: Message) {
-        const serverQueue = this.getServerQueue(message);
+        const serverQueue = this.getServerQueue(message.guild);
         const args = message.content.replace("!play", "").trim();
         const link: string = !this.isUrl(args) ? await this.getLink(args) : args;
 
@@ -65,7 +66,7 @@ export class MusicBot {
     }
 
     skip(message: Message) {
-        const serverQueue = this.getServerQueue(message);
+        const serverQueue = this.getServerQueue(message.guild);
         if (!message.member.voice.channel)
             return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
         if (!serverQueue)
@@ -74,15 +75,15 @@ export class MusicBot {
     }
 
     stop(message: Message) {
-        const serverQueue = this.getServerQueue(message);
+        const serverQueue = this.getServerQueue(message.guild);
         if (!message.member.voice.channel)
             return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
         serverQueue.songs = [];
         serverQueue.connection.dispatcher.end();
     }
 
-    async play(guild, song) {
-        const serverQueue = this.getServerQueue(guild.id);
+    async play(guild: Guild, song: { url: string; title: any; }) {
+        const serverQueue = this.getServerQueue(guild);
         if (!song) {
             console.log("No quedan videos")
             serverQueue.voiceChannel.leave();
@@ -91,7 +92,7 @@ export class MusicBot {
         }
         console.log("Buscando video: ", song.url )
         const video = await ytdl(song.url);
-        console.log("Video: ", video);
+        console.log("Video encontrado ");
         const dispatcher = serverQueue.connection
             .play(video, { type: 'opus' })
             .on("finish", async () => {
@@ -110,10 +111,9 @@ export class MusicBot {
     getLink(toSearch: string): Promise<string>{
         return new Promise( async (resolve) => {
             const filters = await ytsr.getFilters(toSearch);
-            const filter = filters.get('Type').find(a => a.label === 'Video');
-            const search: any = await ytsr(filter.query, { limit: 25 });
-            console.log("Search: ", search);
-            resolve(search.items[0].link)
+            const filter = filters.get('Type').get('Video');
+            const search: any = await ytsr(filter.url, { limit: 5 });
+            resolve(search.items[0].url)
         })
     }
 }

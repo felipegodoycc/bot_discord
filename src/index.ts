@@ -1,8 +1,10 @@
 import { Client, Message } from "discord.js";
-import { prefix, messages, listenChannel } from "./config";
+import { prefix, messages } from "./config";
 import { MusicBot } from "./music";
 import { ChatBot } from "./brain";
+import dotenv from 'dotenv';
 
+dotenv.config();
 const client: Client = new Client();
 const chatBot = new ChatBot(process.env.DIALOG_FLOW_PROJECT);
 const musicBot = new MusicBot();
@@ -33,7 +35,6 @@ client.on("message", async (message: Message) => {
     try {
         if (message.author.bot) return;
         if (!message.content.startsWith(prefix)) return;
-        if (message.channel.id != listenChannel) return;
 
         if (message.content.startsWith(`${prefix}play`)) {
             musicBot.execute(message);

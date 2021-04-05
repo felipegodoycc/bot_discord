@@ -1,9 +1,11 @@
 import { Guild, Message } from 'discord.js';
 import ytdl from 'ytdl-core-discord';
 import ytsr from 'ytsr';
-import { messages } from './config';
-import { QueueItem } from './types/queue.d';
-import { Song } from './types/song.d';
+import { messages } from '../config';
+import { QueueItem } from '../types/queue';
+import { Song } from '../types/song';
+import { createEmbebedMessage, isUrl } from './utils';
+import '../types/string.extend';
 
 export class MusicBot {
 
@@ -17,10 +19,31 @@ export class MusicBot {
         return this.queue.get(guild.id);
     }
 
-    async execute(message: Message) {
+    executeCommand(message: Message){
+        const { command, request } = this.getParamsFromMessage(message);
+        switch (command) {
+            case 'play':
+                this.execute(message, request);
+                break;
+            case `skip`:
+                this.skip(message);
+                break;
+            case 'stop':
+                this.stop(message);
+                break;
+            case 'queue':
+                this.showQueue(message);
+                break;        
+            default:
+                message.channel.send(messages.INVALID_COMMAND);
+                break;
+        }
+    }
+
+    async execute(message: Message, request: string) {
         const serverQueue = this.getServerQueue(message.guild);
-        const args = message.content.replace("!play", "").trim();
-        const link: string = !this.isUrl(args) ? await this.getLink(args) : args;
+        const args = request;
+        const link: string = !isUrl(args) ? await this.getLink(args) : args;
 
         const voiceChannel = message.member.voice.channel;
         if (!voiceChannel)
@@ -104,8 +127,11 @@ export class MusicBot {
         serverQueue.textChannel.send(messages.PLAY_SONG.format(song.title));
     }
 
-    isUrl(data: string): Boolean{
-        return /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(data);
+    showQueue(message: Message){
+        const serverQueue = this.getServerQueue(message.guild);
+        console.log("Queue: ", serverQueue?.songs)
+        if(!serverQueue){ message.channel.send(messages.NOT_QUEUE_EXIST); return}
+        message.channel.send(createEmbebedMessage(serverQueue.songs))
     }
 
     getLink(toSearch: string): Promise<string>{
@@ -116,5 +142,18 @@ export class MusicBot {
             resolve(search.items[0].url)
         })
     }
+
+    getParamsFromMessage(message: Message){
+        const msg = message.content;
+        console.log(message.content.split(' '))
+        const [ ,command, ...resto ] = msg.split(' ');
+        console.log('Mensaje: ', command, ' - request: ', resto.join(' '))
+        return {
+            command,
+            request: resto.join(' ')
+        }
+    }
 }
+
+
  

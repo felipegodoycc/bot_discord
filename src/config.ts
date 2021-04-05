@@ -1,5 +1,6 @@
 export const prefix = '!'
 export const listenChannel = 'test-bot'
+export const generalChannel = 'general'
 export const messages = {
     INVALID_COMMAND: 'Debes ingresar un comando valido :( !',
     MOVE_SUCCESS: 'Listo, movido',
@@ -15,5 +16,6 @@ export const messages = {
     NOT_RESPONSE: 'No tengo respuesta para eso, pete',
     ERROR: 'Changos, algo salio mal :(',
     NOT_USER_FIND: 'no pude encontrar al loquito',
-    NOT_INTENT_EXIST: 'No cacho de esa wea'
+    NOT_INTENT_EXIST: 'No cacho de esa wea',
+    NOT_QUEUE_EXIST: 'Quien esta fumando webon? no hay lista webon'
 }

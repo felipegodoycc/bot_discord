@@ -33,7 +33,10 @@ export class MusicBot {
                 break;
             case 'queue':
                 this.showQueue(message);
-                break;        
+                break;
+            case 'skipto':
+                this.skipTo(message, request);
+                break;
             default:
                 message.channel.send(messages.INVALID_COMMAND);
                 break;
@@ -97,6 +100,19 @@ export class MusicBot {
         serverQueue.connection.dispatcher.end();
     }
 
+    skipTo(message: Message, positionToSkip){
+        console.log("Position to skip: ", positionToSkip)
+        const serverQueue = this.getServerQueue(message.guild);
+        if (!serverQueue)
+            return message.channel.send(messages.EMPTY_QUEUE);
+        if (!message.member.voice.channel)
+            return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
+        if (positionToSkip > serverQueue.songs.length)
+            return message.channel.send(messages.OUT_OF_QUEUE_RANGE);
+        serverQueue.songs = serverQueue.songs.slice(positionToSkip);
+        serverQueue.connection.dispatcher.end();
+    }
+
     stop(message: Message) {
         const serverQueue = this.getServerQueue(message.guild);
         if (!message.member.voice.channel)
@@ -119,8 +135,8 @@ export class MusicBot {
         const dispatcher = serverQueue.connection
             .play(video, { type: 'opus' })
             .on("finish", async () => {
-                serverQueue.songs.shift();
                 await this.play(guild, serverQueue.songs[0]);
+                serverQueue.songs.shift();
             })
             .on("error", error => console.error(error));
         dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);

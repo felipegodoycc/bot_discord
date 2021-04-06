@@ -8,7 +8,7 @@ export class RedisService {
             host: 'localhost',
             port: 6379
         })
-        this.redisClient.on("connnect", () => console.log("Redis conectado"));
+        this.redisClient.on("ready", () => console.log("Redis conectado"));
         this.redisClient.on("error", (error) => console.error(error));
     }
 

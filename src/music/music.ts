@@ -114,7 +114,6 @@ export class MusicBot {
             return message.channel.send(err);
         }
     }
-
     
     skip(message: Message) {
         const serverQueue = this.getServerQueue(message.guild);
@@ -163,9 +162,9 @@ export class MusicBot {
             this.queue.delete(guild.id);
             return;
         }
-        console.log("Buscando video: ", song.url )
+        console.log("Buscando video: ", song.title )
         const video = await ytdl(song.url);
-        console.log("Video encontrado ");
+        console.log("Video encontrado!");
         const dispatcher = serverQueue.connection
             .play(video, { type: 'opus' })
             .on("finish", async () => {

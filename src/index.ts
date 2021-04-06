@@ -35,7 +35,7 @@ client.on("message", async (message: Message) => {
 });
 
 client.on("voiceStateUpdate", (_oldVoiceState,newVoiceState) => { // Listeing to the voiceStateUpdate event
-    if (newVoiceState.channel && newVoiceState.channel.name != 'AFK') { // The member connected to a channel.
-        newVoiceState.guild.systemChannel.send(`${newVoiceState.member.user.tag} se ha conectado a ${newVoiceState.channel.name}.`);
+    if (newVoiceState.channel && newVoiceState.channel.name != 'AFK' && newVoiceState.channel.members.size <2 && newVoiceState.channel.permissionsLocked) {
+        newVoiceState.guild.systemChannel.send(messages.WELCOME_VOICE_CHAT.format(newVoiceState.member.user.tag,newVoiceState.channel.name));
     }
 });

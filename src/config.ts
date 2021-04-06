@@ -17,5 +17,6 @@ export const messages = {
     ERROR: 'Changos, algo salio mal :(',
     NOT_USER_FIND: 'no pude encontrar al loquito',
     NOT_INTENT_EXIST: 'No cacho de esa wea',
-    NOT_QUEUE_EXIST: 'Quien esta fumando webon? no hay lista webon'
+    NOT_QUEUE_EXIST: 'Quien esta fumando webon? no hay lista webon',
+    WELCOME_VOICE_CHAT: '{0} se ha conectado a {1}, ta solito, quiere pito.'
 }

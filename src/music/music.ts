@@ -1,26 +1,27 @@
 import { Guild, Message } from 'discord.js';
 import ytdl from 'ytdl-core-discord';
-import ytsr from 'ytsr';
 import { messages } from '../config';
 import { QueueItem } from '../types/queue';
-import { Song } from '../types/song';
-import { createEmbebedMessage, isUrl } from './utils';
+import { RedisSaveSongs, Song } from '../types/song';
+import { createEmbebedMessage, getLink, getParamsFromMessage, isUrl, sleep } from './utils';
 import '../types/string.extend';
+import { RedisService } from '../redis/redis';
 
 export class MusicBot {
 
     private queue:Map<string, QueueItem> = new Map<string, QueueItem>();;
+    private redisClient: RedisService = new RedisService();
 
     constructor(){
     }
 
     getServerQueue(guild){
-        console.log("ID: ", guild.id)
+        console.log("ServerID: ", guild.id)
         return this.queue.get(guild.id);
     }
 
     executeCommand(message: Message){
-        const { command, request } = this.getParamsFromMessage(message);
+        const { command, request } = getParamsFromMessage(message);
         switch (command) {
             case 'play':
                 this.execute(message, request);
@@ -37,16 +38,31 @@ export class MusicBot {
             case 'skipto':
                 this.skipTo(message, request);
                 break;
+            case 'resume':
+                this.resume(message);
+                break;
             default:
                 message.channel.send(messages.INVALID_COMMAND);
                 break;
         }
     }
 
-    async execute(message: Message, request: string) {
+    initializeServerQeue(message: Message): QueueItem{
+        const queueContruct: QueueItem = {
+            textChannel: message.channel,
+            voiceChannel: message.member.voice.channel,
+            connection: null,
+            songs: [],
+            volume: 5,
+            playing: true
+        };
+        this.queue.set(message.guild.id, queueContruct);
+        return queueContruct         
+    }
+
+    async execute(message: Message, args: string) {
         const serverQueue = this.getServerQueue(message.guild);
-        const args = request;
-        const link: string = !isUrl(args) ? await this.getLink(args) : args;
+        const link: string = !isUrl(args) ? await getLink(args) : args;
 
         const voiceChannel = message.member.voice.channel;
         if (!voiceChannel)
@@ -64,17 +80,8 @@ export class MusicBot {
         console.log("SONG: ", song)
 
         if (!serverQueue) {
-            const queueContruct: QueueItem = {
-                textChannel: message.channel,
-                voiceChannel: voiceChannel,
-                connection: null,
-                songs: [],
-                volume: 5,
-                playing: true
-            };
-
-            this.queue.set(message.guild.id, queueContruct);
-            queueContruct.songs.push(song);
+            const queueContruct: QueueItem = this.initializeServerQeue(message);
+            this.addSong(message.guild, queueContruct, song)
 
             try {
                 var connection = await voiceChannel.join();
@@ -86,11 +93,29 @@ export class MusicBot {
                 return message.channel.send(err);
             }
         } else {
-            serverQueue.songs.push(song);
+            this.addSong(message.guild, serverQueue, song)
             return message.channel.send(messages.ADD_SONG.format(song.title));
         }
     }
 
+
+    async resume(message: Message) {
+        const songs = await this.loadServerQueue(message.guild);
+        const serverQueue = this.initializeServerQeue(message);
+        serverQueue.songs = songs;
+        try {
+            var connection = await message.member.voice.channel.join();
+            serverQueue.connection = connection;
+            this.showQueue(message);
+            await this.play(message.guild, serverQueue.songs[0]);
+        } catch (err) {
+            console.log(err);
+            this.queue.delete(message.guild.id);
+            return message.channel.send(err);
+        }
+    }
+
+    
     skip(message: Message) {
         const serverQueue = this.getServerQueue(message.guild);
         if (!message.member.voice.channel)
@@ -109,7 +134,7 @@ export class MusicBot {
             return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
         if (positionToSkip > serverQueue.songs.length)
             return message.channel.send(messages.OUT_OF_QUEUE_RANGE);
-        serverQueue.songs = serverQueue.songs.slice(positionToSkip);
+        serverQueue.songs = serverQueue.songs.slice(positionToSkip-1);
         serverQueue.connection.dispatcher.end();
     }
 
@@ -117,14 +142,23 @@ export class MusicBot {
         const serverQueue = this.getServerQueue(message.guild);
         if (!message.member.voice.channel)
             return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
-        serverQueue.songs = [];
+        serverQueue.songs = []
         serverQueue.connection.dispatcher.end();
     }
 
-    async play(guild: Guild, song: { url: string; title: any; }) {
+    clean(message: Message){
+        const serverQueue = this.getServerQueue(message.guild);
+        if (!message.member.voice.channel)
+            return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
+        serverQueue.songs = []
+        this.saveServerQueue(message.guild, serverQueue);
+    }
+
+    async play(guild: Guild, song: Song) {
         const serverQueue = this.getServerQueue(guild);
         if (!song) {
             console.log("No quedan videos")
+            await sleep(5000);
             serverQueue.voiceChannel.leave();
             this.queue.delete(guild.id);
             return;
@@ -135,8 +169,8 @@ export class MusicBot {
         const dispatcher = serverQueue.connection
             .play(video, { type: 'opus' })
             .on("finish", async () => {
-                await this.play(guild, serverQueue.songs[0]);
                 serverQueue.songs.shift();
+                await this.play(guild, serverQueue.songs[0]);
             })
             .on("error", error => console.error(error));
         dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
@@ -150,24 +184,21 @@ export class MusicBot {
         message.channel.send(createEmbebedMessage(serverQueue.songs))
     }
 
-    getLink(toSearch: string): Promise<string>{
-        return new Promise( async (resolve) => {
-            const filters = await ytsr.getFilters(toSearch);
-            const filter = filters.get('Type').get('Video');
-            const search: any = await ytsr(filter.url, { limit: 5 });
-            resolve(search.items[0].url)
-        })
-    }
+    addSong(guild: Guild,serverQueue: QueueItem, song: Song){
+        serverQueue.songs.push(song);
+        this.saveServerQueue(guild, serverQueue)
+    }    
 
-    getParamsFromMessage(message: Message){
-        const msg = message.content;
-        console.log(message.content.split(' '))
-        const [ ,command, ...resto ] = msg.split(' ');
-        console.log('Mensaje: ', command, ' - request: ', resto.join(' '))
-        return {
-            command,
-            request: resto.join(' ')
+    async saveServerQueue(guild: Guild, queue: QueueItem){
+        const saveQueue = {
+            songs: queue.songs
         }
+        await this.redisClient.setObject(guild.id, saveQueue)
+    }
+    
+    async loadServerQueue(guild: Guild){
+        const { songs } = await this.redisClient.getObject<RedisSaveSongs>(guild.id);
+        return songs;
     }
 }
 

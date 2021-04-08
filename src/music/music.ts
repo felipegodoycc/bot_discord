@@ -8,7 +8,7 @@ import '../types/string.extend';
 import { RedisService } from '../redis/redis';
 import { commands } from './commands';
 import { SpotifyService } from './spotify';
-import { getLink, getYoutubeSong } from './youtube';
+import { getYoutubeSong, searchAndGetYoutubeSong } from './youtube';
 
 export class MusicBot {
 
@@ -17,7 +17,6 @@ export class MusicBot {
     private spotifyClient: SpotifyService = new SpotifyService();
 
     constructor(){
-        console.log("SPOTIFY: ", this.spotifyClient)
     }
 
     getServerQueue(guild: Guild){
@@ -46,6 +45,9 @@ export class MusicBot {
             case commands.RESUME:
                 this.resume(message);
                 break;
+            case commands.CLEAN:
+                this.clean(message);
+                break;
             default:
                 message.channel.send(messages.INVALID_COMMAND);
                 break;
@@ -59,7 +61,8 @@ export class MusicBot {
             connection: null,
             songs: [],
             volume: 5,
-            playing: true
+            playing: true,
+            guild: message.guild
         };
         this.queue.set(message.guild.id, queueContruct);
         return queueContruct         
@@ -67,7 +70,6 @@ export class MusicBot {
 
     async execute(message: Message, args: string) {
         const serverQueue = this.getServerQueue(message.guild);
-        const link: string = !isUrl(args) ? await getLink(args) : args;
 
         const voiceChannel = message.member.voice.channel;
         if (!voiceChannel)
@@ -76,16 +78,14 @@ export class MusicBot {
         if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
             return message.channel.send(messages.NOT_VOICE_PERMISSION);
         }
-
-        const song = await getYoutubeSong(link);
-
         if (!serverQueue) {
             const queueContruct: QueueItem = this.initializeServerQeue(message);
-            this.addSong(message.guild, queueContruct, song)
+            await this.load(args, queueContruct);
 
             try {
                 var connection = await voiceChannel.join();
                 queueContruct.connection = connection;
+                console.log("QUEUE SONGS: ", queueContruct.songs)
                 await this.play(message.guild, queueContruct.songs[0]);
             } catch (err) {
                 console.log(err);
@@ -93,8 +93,8 @@ export class MusicBot {
                 return message.channel.send(err);
             }
         } else {
-            this.addSong(message.guild, serverQueue, song)
-            return message.channel.send(messages.ADD_SONG.format(song.title));
+            const song = await this.load(args, serverQueue);
+            return message.channel.send(messages.ADD_SONG.format(song));
         }
     }
 
@@ -149,8 +149,9 @@ export class MusicBot {
         const serverQueue = this.getServerQueue(message.guild);
         if (!message.member.voice.channel)
             return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
+        if(!serverQueue) return this.deleteServerQueue(message.guild);
         serverQueue.songs = []
-        this.saveServerQueue(message.guild, serverQueue);
+        this.saveServerQueue(serverQueue);
     }
 
     async play(guild: Guild, song: Song) {
@@ -162,7 +163,10 @@ export class MusicBot {
             this.queue.delete(guild.id);
             return;
         }
-        console.log("Buscando video: ", song.title )
+        if(song.src === 'spot'){
+            const ytSong = await searchAndGetYoutubeSong(song.title);
+            song.url = ytSong.url            
+        }
         const video = await ytdl(song.url);
         console.log("Video encontrado!");
         const dispatcher = serverQueue.connection
@@ -183,21 +187,59 @@ export class MusicBot {
         message.channel.send(createEmbebedMessage(serverQueue.songs))
     }
 
-    addSong(guild: Guild,serverQueue: QueueItem, song: Song){
+    addSong(serverQueue: QueueItem, song: Song){
         serverQueue.songs.push(song);
-        this.saveServerQueue(guild, serverQueue)
+        this.saveServerQueue(serverQueue)
     }    
 
-    async saveServerQueue(guild: Guild, queue: QueueItem){
+    async saveServerQueue(queue: QueueItem){
         const saveQueue: RedisSaveSongs = {
             songs: queue.songs
         }
-        await this.redisClient.setObject(guild.id, saveQueue)
+        await this.redisClient.setObject(queue.guild.id, saveQueue)
     }
     
     async loadServerQueue(guild: Guild){
         const { songs } = await this.redisClient.getObject<RedisSaveSongs>(guild.id);
         return songs;
+    }
+
+    async deleteServerQueue(guild: Guild){
+        await this.redisClient.delete(guild.id)
+    }
+
+    async load(args: string, serverQueue: QueueItem): Promise<String>{
+        try {
+            if(!isUrl(args)){
+                return(this.addYoutubeSong(serverQueue, args))
+            } else {
+                if(args.includes("spotify")){
+                    const idPlaylist = args.split("/").pop();
+                    const spotifySongs = await this.spotifyClient.getPlaylist(idPlaylist);
+                    const sp = spotifySongs.tracks.slice(0,10);
+                    // await Promise.all(sp.map( async (track) => {
+                    //     const ytSongName = `${track.title} ${track.poster}`
+                    //     return await this.addYoutubeSong(serverQueue, ytSongName)                  
+                    // }))
+                    sp.map( track => serverQueue.songs.push({ title: `${track.title} ${track.poster}`, src: "spot" }))
+                    return(spotifySongs.name)
+                } else if(args.includes("youtu")) {
+                    const ytSong = await getYoutubeSong(args);
+                    this.addSong(serverQueue, ytSong);
+                    return(ytSong.title)
+                }
+            }
+        } catch (error) {
+            console.log("LOAD ERROR: ", error)            
+        }
+    }
+
+    async addYoutubeSong(serverQueue: QueueItem, args: string): Promise<string>{
+        return new Promise( async resolve => {
+            const ytSong = await searchAndGetYoutubeSong(args)
+            this.addSong(serverQueue, ytSong)
+            resolve(ytSong.title)
+        })
     }
 }
 

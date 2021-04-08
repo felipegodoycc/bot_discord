@@ -31,6 +31,16 @@ export class RedisService {
         }) 
     }
 
+    delete(key: string): Promise<number> {
+        return new Promise( (resolve, reject) => {
+            this.redisClient.del(key, (err, cb) => {
+                if(err) return reject(err)
+                return resolve(cb)
+            })
+        }) 
+    }
+
+
     async setObject(key: string, obj: Object) {
         const objString = JSON.stringify(obj);
         return await this.set(key, objString)

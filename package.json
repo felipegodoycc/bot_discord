@@ -27,6 +27,7 @@
   "dependencies": {
     "@discordjs/opus": "^0.3.3",
     "@google-cloud/dialogflow": "^3.4.0",
+    "axios": "^0.21.1",
     "discord.js": "^12.5.3",
     "dotenv": "^8.2.0",
     "ffmpeg": "0.0.4",

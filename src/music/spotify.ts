@@ -56,13 +56,11 @@ export class SpotifyService {
 
     private async getToken(): Promise<void> {
         const auth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString("base64")
-        console.log("AUTH SPOTIFY: ", auth)
         const payload = "grant_type=client_credentials"
         try {
             const resp = await axios.post<TokenAccessResponse>('https://accounts.spotify.com/api/token', payload, { headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' }});
             this.token = resp.data.access_token;
             this.expiration = Date.now() + resp.data.expires_in;
-            console.log("TOKEN: ", this.token)
         } catch (error) {
             console.log("ERROR SP: ", error)
         } 

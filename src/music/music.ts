@@ -3,19 +3,24 @@ import ytdl from 'ytdl-core-discord';
 import { messages } from '../config';
 import { QueueItem } from '../types/queue';
 import { RedisSaveSongs, Song } from '../types/song';
-import { createEmbebedMessage, getLink, getParamsFromMessage, isUrl, sleep } from './utils';
+import { createEmbebedMessage, getParamsFromMessage, isUrl, sleep } from './utils';
 import '../types/string.extend';
 import { RedisService } from '../redis/redis';
+import { commands } from './commands';
+import { SpotifyService } from './spotify';
+import { getLink, getYoutubeSong } from './youtube';
 
 export class MusicBot {
 
     private queue:Map<string, QueueItem> = new Map<string, QueueItem>();;
     private redisClient: RedisService = new RedisService();
+    private spotifyClient: SpotifyService = new SpotifyService();
 
     constructor(){
+        console.log("SPOTIFY: ", this.spotifyClient)
     }
 
-    getServerQueue(guild){
+    getServerQueue(guild: Guild){
         console.log("ServerID: ", guild.id)
         return this.queue.get(guild.id);
     }
@@ -23,22 +28,22 @@ export class MusicBot {
     executeCommand(message: Message){
         const { command, request } = getParamsFromMessage(message);
         switch (command) {
-            case 'play':
+            case commands.PLAY:
                 this.execute(message, request);
                 break;
-            case `skip`:
+            case commands.SKIP:
                 this.skip(message);
                 break;
-            case 'stop':
+            case commands.STOP:
                 this.stop(message);
                 break;
-            case 'queue':
+            case commands.GET_QUEUE:
                 this.showQueue(message);
                 break;
-            case 'skipto':
+            case commands.SKIP_TO:
                 this.skipTo(message, request);
                 break;
-            case 'resume':
+            case commands.RESUME:
                 this.resume(message);
                 break;
             default:
@@ -72,12 +77,7 @@ export class MusicBot {
             return message.channel.send(messages.NOT_VOICE_PERMISSION);
         }
 
-        const songInfo = await ytdl.getInfo(link);
-        const song : Song = {
-            title: songInfo.videoDetails.title,
-            url: songInfo.videoDetails.video_url
-        };
-        console.log("SONG: ", song)
+        const song = await getYoutubeSong(link);
 
         if (!serverQueue) {
             const queueContruct: QueueItem = this.initializeServerQeue(message);
@@ -189,7 +189,7 @@ export class MusicBot {
     }    
 
     async saveServerQueue(guild: Guild, queue: QueueItem){
-        const saveQueue = {
+        const saveQueue: RedisSaveSongs = {
             songs: queue.songs
         }
         await this.redisClient.setObject(guild.id, saveQueue)

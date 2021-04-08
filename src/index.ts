@@ -36,6 +36,6 @@ client.on("message", async (message: Message) => {
 
 client.on("voiceStateUpdate", (_oldVoiceState,newVoiceState) => { // Listeing to the voiceStateUpdate event
     if (newVoiceState.channel && newVoiceState.channel.name != 'AFK' && newVoiceState.channel.members.size <2 && newVoiceState.channel.permissionsLocked) {
-        newVoiceState.guild.systemChannel.send(messages.WELCOME_VOICE_CHAT.format(newVoiceState.member.user.tag,newVoiceState.channel.name));
+        newVoiceState.guild.systemChannel.send(messages.WELCOME_VOICE_CHAT.format(newVoiceState.member.user,newVoiceState.channel.name));
     }
 });

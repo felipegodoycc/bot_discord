@@ -10,6 +10,7 @@ export function getChannelInfo(message: Message): GuildChannel {
 
 export function getChannelName(message: Message): String {
     const channel = getChannelInfo(message);
+    console.log("CHANNEL NAME: ", channel.name)
     return channel.name;
 }
 

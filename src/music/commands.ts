@@ -5,5 +5,7 @@ export const commands = {
     GET_QUEUE: "queue",
     SKIP_TO: "skipto",
     RESUME: "resume",
-    CLEAN: "clean"
+    CLEAN: "clean",
+    SETUP: "setup",
+    DEDICATED: "dedicated"
 }

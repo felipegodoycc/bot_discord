@@ -1,14 +1,14 @@
 import { Guild, Message } from 'discord.js';
 import ytdl from 'ytdl-core-discord';
-import { MESSAGES, PLAYLIST_LIMIT } from '../config';
-import { QueueItem } from '../types/queue';
-import { RedisSaveSongs, Song } from '../types/song';
+import { DEDICATED_MUSIC_TEXT_CHANNEL, MESSAGES, PLAYLIST_LIMIT } from '../config';
+import { QueueItem } from './types/queue';
+import { RedisSaveSongs, Song } from './types/song';
 import { createEmbebedMessage, getParamsFromMessage, isUrl, sleep } from './utils';
 import '../types/string.extend';
 import { RedisService } from '../redis/redis';
 import { commands } from './commands';
-import { SpotifyService } from './spotify';
-import { getSongsFromPlaylist, getYoutubeSong, searchAndGetYoutubeSong } from './youtube';
+import { SpotifyService } from './API/spotify';
+import { getSongsFromPlaylist, getYoutubeSong, searchAndGetYoutubeSong } from './API/youtube';
 
 export class MusicBot {
 
@@ -20,7 +20,7 @@ export class MusicBot {
     constructor(){
     }
 
-    getServerQueue(guild: Guild){
+    private getServerQueue(guild: Guild){
         console.log("ServerID: ", guild.id)
         return this.queue.get(guild.id);
     }
@@ -54,13 +54,16 @@ export class MusicBot {
             case commands.CLEAN:
                 this.clean();
                 break;
+            case commands.SETUP:
+                this.createDedicatedChannel();
+                break;
             default:
                 message.channel.send(MESSAGES.INVALID_COMMAND);
                 break;
         }
     }
 
-    initializeServerQeue(): QueueItem{
+    private initializeServerQeue(): QueueItem{
         const message = this.message;
         const queueContruct: QueueItem = {
             textChannel: message.channel,
@@ -75,7 +78,7 @@ export class MusicBot {
         return queueContruct         
     }
 
-    async execute(args: string) {
+    private async execute(args: string) {
         const message = this.message;
         try {
             const serverQueue = this.getServerQueue(message.guild);
@@ -99,7 +102,7 @@ export class MusicBot {
         }
     }
 
-    async resume() {
+    private async resume() {
         const message = this.message;
         const songs = await this.loadServerQueue(message.guild);
         const serverQueue = this.initializeServerQeue();
@@ -108,7 +111,7 @@ export class MusicBot {
         this.showQueue();
     }
     
-    skip() {
+    private skip() {
         const message = this.message;
         const serverQueue = this.getServerQueue(message.guild);
         if (!message.member.voice.channel)
@@ -118,7 +121,7 @@ export class MusicBot {
         serverQueue.connection.dispatcher.end();
     }
 
-    skipTo(positionToSkip: string | number){
+    private skipTo(positionToSkip: string | number){
         console.log("Position to skip: ", positionToSkip)
         const message = this.message;
         const serverQueue = this.getServerQueue(message.guild);
@@ -133,7 +136,7 @@ export class MusicBot {
         serverQueue.connection.dispatcher.end();
     }
 
-    stop() {
+    private stop() {
         const message = this.message;
         const serverQueue = this.getServerQueue(message.guild);
         if (!message.member.voice.channel)
@@ -142,7 +145,7 @@ export class MusicBot {
         serverQueue.connection.dispatcher.end();
     }
 
-    clean(){
+    private clean(){
         const message = this.message;
         const serverQueue = this.getServerQueue(message.guild);
         if (!message.member.voice.channel)
@@ -152,7 +155,7 @@ export class MusicBot {
         this.saveServerQueue(serverQueue);
     }
 
-    async startReproduction(serverQueue: QueueItem){
+    private async startReproduction(serverQueue: QueueItem){
         const message = this.message;
         try {
             var connection = await message.member.voice.channel.join();
@@ -166,7 +169,7 @@ export class MusicBot {
         }
     }
 
-    async play(song: Song) {
+    private async play(song: Song) {
         try {
             const guild = this.message.guild;
             const serverQueue = this.getServerQueue(guild);
@@ -196,7 +199,7 @@ export class MusicBot {
         }
     }
 
-    showQueue(){
+    private showQueue(){
         const message = this.message;
         const serverQueue = this.getServerQueue(message.guild);
         console.log("Queue: ", serverQueue?.songs)
@@ -204,12 +207,12 @@ export class MusicBot {
         message.channel.send(createEmbebedMessage(serverQueue.songs))
     }
 
-    addSong(serverQueue: QueueItem, ...songs: Song[]){
+    private addSong(serverQueue: QueueItem, ...songs: Song[]){
         songs.map( song => serverQueue.songs.push(song));        
         this.saveServerQueue(serverQueue)
     }
 
-    async loadSong(args: string, serverQueue: QueueItem): Promise<String>{
+    private async loadSong(args: string, serverQueue: QueueItem): Promise<String>{
         try {
             if(!isUrl(args)){
                 const ytSong = await searchAndGetYoutubeSong(args)
@@ -241,20 +244,37 @@ export class MusicBot {
         }
     }
 
-    async saveServerQueue(queue: QueueItem){
+    private async saveServerQueue(queue: QueueItem){
         const saveQueue: RedisSaveSongs = {
             songs: queue.songs
         }
         await this.redisClient.setObject(queue.guild.id, saveQueue)
     }
     
-    async loadServerQueue(guild: Guild){
+    private async loadServerQueue(guild: Guild){
         const { songs } = await this.redisClient.getObject<RedisSaveSongs>(guild.id);
         return songs;
     }
 
-    async deleteServerQueue(guild: Guild){
+    private async deleteServerQueue(guild: Guild){
         await this.redisClient.delete(guild.id)
+    }
+
+    private async createDedicatedChannel(): Promise<void>{
+        const server = this.message.guild;
+        if(server.channels.cache.find( ch => ch.name === DEDICATED_MUSIC_TEXT_CHANNEL)){
+            this.message.reply(MESSAGES.DEDICATED_CHANNEL_EXIST);
+            return;
+        }
+        const newChannel = await server.channels.create(DEDICATED_MUSIC_TEXT_CHANNEL, { type: 'text', reason: 'Porque si' });
+        this.message.reply(MESSAGES.DEDICATE_CHANNEL_SUCCESFULL.format(newChannel))
+        newChannel.send(MESSAGES.WELCOME_DEDICATED_MUSIC_CHANNEL);
+        return;
+    }
+
+    public listenDedicatedChannel(message: Message){
+        this.setMessage(message);
+        this.execute(message.content);
     }
 }
 

@@ -1,5 +1,5 @@
 import {  Client, Message } from "discord.js";
-import { prefix, messages, listenChannel } from "./config";
+import {  MESSAGES, LISTENCHANNEL, PREFIX } from "./config";
 import { MusicBot } from "./music/music";
 import { ChatBot } from "./dialogflow/brain";
 import dotenv from 'dotenv';
@@ -20,22 +20,22 @@ client.on("ready", () => {
 client.on("message", async (message: Message) => {
     try {
         if (message.author.bot) return;
-        if (!message.content.startsWith(prefix)) return;
-        if (getChannelName(message) != listenChannel) return;
+        if (!message.content.startsWith(PREFIX)) return;
+        if (getChannelName(message) != LISTENCHANNEL) return;
 
-        if (message.content.startsWith(`${prefix}music`)) {
+        if (message.content.startsWith(`${PREFIX}music`)) {
             musicBot.executeCommand(message);
         } else {
             await chatBot.getResponse(message);
         }
     } catch (error) {
         console.log("Error: ", error);
-        message.channel.send(messages.ERROR);
+        message.channel.send(MESSAGES.ERROR);
     }
 });
 
 client.on("voiceStateUpdate", (_oldVoiceState,newVoiceState) => { // Listeing to the voiceStateUpdate event
     if (newVoiceState.channel && newVoiceState.channel.name != 'AFK' && newVoiceState.channel.members.size <2 && newVoiceState.channel.permissionsLocked) {
-        newVoiceState.guild.systemChannel.send(messages.WELCOME_VOICE_CHAT.format(newVoiceState.member.user,newVoiceState.channel.name));
+        newVoiceState.guild.systemChannel.send(MESSAGES.WELCOME_VOICE_CHAT.format(newVoiceState.member.user,newVoiceState.channel.name));
     }
 });

@@ -1,5 +1,5 @@
 import { SessionsClient } from '@google-cloud/dialogflow';
-import { messages } from '../config';
+import { MESSAGES } from '../config';
 import { v4 } from 'uuid';
 import { Message } from 'discord.js';
 import { google } from '@google-cloud/dialogflow/build/protos/protos';
@@ -58,10 +58,10 @@ export class ChatBot {
                     const msg = await moverUsuario(message, user, channel)
                     return resolve(msg)
                 } else {
-                    return reject(respuesta ? respuesta : messages.NOT_RESPONSE)
+                    return reject(respuesta ? respuesta : MESSAGES.NOT_RESPONSE)
                 }
             } else {
-                return reject(messages.NOT_INTENT_EXIST)
+                return reject(MESSAGES.NOT_INTENT_EXIST)
             }
         })
     }

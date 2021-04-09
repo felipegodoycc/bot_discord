@@ -1,7 +1,8 @@
-export const prefix = '!'
-export const listenChannel = 'test-bot'
-export const generalChannel = 'general'
-export const messages = {
+export const PREFIX = '!'
+export const LISTENCHANNEL = 'test-bot'
+export const GENERALCHANNEL = 'general'
+export const PLAYLIST_LIMIT = 15;
+export const MESSAGES = {
     INVALID_COMMAND: 'Debes ingresar un comando valido :( !',
     MOVE_SUCCESS: 'Listo, movido',
     NOT_FOUND_MEMBER: 'Usuario no encontrado :(',
@@ -19,5 +20,6 @@ export const messages = {
     NOT_INTENT_EXIST: 'No cacho de esa wea',
     NOT_QUEUE_EXIST: 'Quien esta fumando webon? no hay lista webon',
     WELCOME_VOICE_CHAT: '{0} se ha conectado a {1}, ta solito, quiere pito.',
-    OUT_OF_QUEUE_RANGE: 'Wou wou wou esta cancion no esta en la lista'
+    OUT_OF_QUEUE_RANGE: 'Wou wou wou esta cancion no esta en la lista',
+    NOT_ALLOWED_ORIGIN: 'Link mas enviado u origen no soportado'
 }

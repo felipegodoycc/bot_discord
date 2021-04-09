@@ -1,5 +1,5 @@
 import { EmbedField, Message, MessageEmbed } from "discord.js";
-import { Song } from "../types/song";
+import { Song } from "./types/song";
 
 export function isUrl(data: string): Boolean{
     return /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(data);

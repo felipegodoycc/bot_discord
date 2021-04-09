@@ -3,7 +3,7 @@ import ytsr from "ytsr";
 import ytpl from "ytpl";
 
 import { Song, YoutubePlaylist } from "../types/song";
-import { PLAYLIST_LIMIT } from "../config";
+import { PLAYLIST_LIMIT } from "../../config";
 
 export function getYoutubeLink(toSearch: string): Promise<string>{
     return new Promise( async (resolve) => {

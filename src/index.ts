@@ -13,7 +13,9 @@ const musicBot = new MusicBot();
 
 client.login(process.env.TOKEN_DISCORD_BOT);
 
+
 client.on("ready", () => {
+    client.user.setPresence({ activity: { name: "con tu mamita", type: "PLAYING"}, status: "dnd"})
     console.log(`Bot conectado como ${client.user.tag}`);
 });
 
@@ -35,3 +37,4 @@ client.on("voiceStateUpdate", (_oldVoiceState,newVoiceState) => { // Listeing to
         newVoiceState.guild.systemChannel.send(MESSAGES.WELCOME_VOICE_CHAT.format(newVoiceState.member.user,newVoiceState.channel.name));
     }
 });
+

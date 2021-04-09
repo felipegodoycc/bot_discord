@@ -1,6 +1,6 @@
 import { Guild, Message } from 'discord.js';
 import ytdl from 'ytdl-core-discord';
-import { messages } from '../config';
+import { MESSAGES, PLAYLIST_LIMIT } from '../config';
 import { QueueItem } from '../types/queue';
 import { RedisSaveSongs, Song } from '../types/song';
 import { createEmbebedMessage, getParamsFromMessage, isUrl, sleep } from './utils';
@@ -8,13 +8,14 @@ import '../types/string.extend';
 import { RedisService } from '../redis/redis';
 import { commands } from './commands';
 import { SpotifyService } from './spotify';
-import { getYoutubeSong, searchAndGetYoutubeSong } from './youtube';
+import { getSongsFromPlaylist, getYoutubeSong, searchAndGetYoutubeSong } from './youtube';
 
 export class MusicBot {
 
     private queue:Map<string, QueueItem> = new Map<string, QueueItem>();;
     private redisClient: RedisService = new RedisService();
     private spotifyClient: SpotifyService = new SpotifyService();
+    private message: Message = null;
 
     constructor(){
     }
@@ -24,37 +25,43 @@ export class MusicBot {
         return this.queue.get(guild.id);
     }
 
+    private setMessage(message: Message){
+        this.message = message;
+    }
+
     executeCommand(message: Message){
+        this.setMessage(message)
         const { command, request } = getParamsFromMessage(message);
         switch (command) {
             case commands.PLAY:
-                this.execute(message, request);
+                this.execute(request);
                 break;
             case commands.SKIP:
-                this.skip(message);
+                this.skip();
                 break;
             case commands.STOP:
-                this.stop(message);
+                this.stop();
                 break;
             case commands.GET_QUEUE:
-                this.showQueue(message);
+                this.showQueue();
                 break;
             case commands.SKIP_TO:
-                this.skipTo(message, request);
+                this.skipTo(request);
                 break;
             case commands.RESUME:
-                this.resume(message);
+                this.resume();
                 break;
             case commands.CLEAN:
-                this.clean(message);
+                this.clean();
                 break;
             default:
-                message.channel.send(messages.INVALID_COMMAND);
+                message.channel.send(MESSAGES.INVALID_COMMAND);
                 break;
         }
     }
 
-    initializeServerQeue(message: Message): QueueItem{
+    initializeServerQeue(): QueueItem{
+        const message = this.message;
         const queueContruct: QueueItem = {
             textChannel: message.channel,
             voiceChannel: message.member.voice.channel,
@@ -68,129 +75,171 @@ export class MusicBot {
         return queueContruct         
     }
 
-    async execute(message: Message, args: string) {
-        const serverQueue = this.getServerQueue(message.guild);
-
-        const voiceChannel = message.member.voice.channel;
-        if (!voiceChannel)
-            return message.channel.send(messages.NOT_VOICE_CHANNEL);
-        const permissions = voiceChannel.permissionsFor(message.client.user);
-        if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
-            return message.channel.send(messages.NOT_VOICE_PERMISSION);
-        }
-        if (!serverQueue) {
-            const queueContruct: QueueItem = this.initializeServerQeue(message);
-            await this.load(args, queueContruct);
-
-            try {
-                var connection = await voiceChannel.join();
-                queueContruct.connection = connection;
-                console.log("QUEUE SONGS: ", queueContruct.songs)
-                await this.play(message.guild, queueContruct.songs[0]);
-            } catch (err) {
-                console.log(err);
-                this.queue.delete(message.guild.id);
-                return message.channel.send(err);
+    async execute(args: string) {
+        const message = this.message;
+        try {
+            const serverQueue = this.getServerQueue(message.guild);
+    
+            const voiceChannel = message.member.voice.channel;
+            if (!voiceChannel) return message.channel.send(MESSAGES.NOT_VOICE_CHANNEL);
+            const permissions = voiceChannel.permissionsFor(message.client.user);
+            if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
+                return message.channel.send(MESSAGES.NOT_VOICE_PERMISSION);
             }
-        } else {
-            const song = await this.load(args, serverQueue);
-            return message.channel.send(messages.ADD_SONG.format(song));
+            if (!serverQueue) {
+                const queueContruct: QueueItem = this.initializeServerQeue();
+                await this.loadSong(args, queueContruct);
+                return this.startReproduction(queueContruct)
+            } else {
+                const song = await this.loadSong(args, serverQueue);
+                return message.channel.send(MESSAGES.ADD_SONG.format(song));
+            }            
+        } catch (error) {
+            console.log("ERROR EN EXECUTE: ", error)            
         }
     }
 
-
-    async resume(message: Message) {
+    async resume() {
+        const message = this.message;
         const songs = await this.loadServerQueue(message.guild);
-        const serverQueue = this.initializeServerQeue(message);
+        const serverQueue = this.initializeServerQeue();
         serverQueue.songs = songs;
+        this.startReproduction(serverQueue);
+        this.showQueue();
+    }
+    
+    skip() {
+        const message = this.message;
+        const serverQueue = this.getServerQueue(message.guild);
+        if (!message.member.voice.channel)
+            return message.channel.send(MESSAGES.MEMBER_NOT_IN_VOICE_CHANNEL);
+        if (!serverQueue)
+            return message.channel.send(MESSAGES.EMPTY_QUEUE);
+        serverQueue.connection.dispatcher.end();
+    }
+
+    skipTo(positionToSkip: string | number){
+        console.log("Position to skip: ", positionToSkip)
+        const message = this.message;
+        const serverQueue = this.getServerQueue(message.guild);
+        positionToSkip = Number(positionToSkip);
+        if (!serverQueue)
+            return message.channel.send(MESSAGES.EMPTY_QUEUE);
+        if (!message.member.voice.channel)
+            return message.channel.send(MESSAGES.MEMBER_NOT_IN_VOICE_CHANNEL);
+        if (positionToSkip > serverQueue.songs.length)
+            return message.channel.send(MESSAGES.OUT_OF_QUEUE_RANGE);
+        serverQueue.songs = serverQueue.songs.slice(positionToSkip-1);
+        serverQueue.connection.dispatcher.end();
+    }
+
+    stop() {
+        const message = this.message;
+        const serverQueue = this.getServerQueue(message.guild);
+        if (!message.member.voice.channel)
+            return message.channel.send(MESSAGES.MEMBER_NOT_IN_VOICE_CHANNEL);
+        serverQueue.songs = []
+        serverQueue.connection.dispatcher.end();
+    }
+
+    clean(){
+        const message = this.message;
+        const serverQueue = this.getServerQueue(message.guild);
+        if (!message.member.voice.channel)
+            return message.channel.send(MESSAGES.MEMBER_NOT_IN_VOICE_CHANNEL);
+        if(!serverQueue) return this.deleteServerQueue(message.guild);
+        serverQueue.songs = []
+        this.saveServerQueue(serverQueue);
+    }
+
+    async startReproduction(serverQueue: QueueItem){
+        const message = this.message;
         try {
             var connection = await message.member.voice.channel.join();
             serverQueue.connection = connection;
-            this.showQueue(message);
-            await this.play(message.guild, serverQueue.songs[0]);
+            console.log("QUEUE SONGS: ", serverQueue.songs)
+            await this.play(serverQueue.songs[0]);
         } catch (err) {
             console.log(err);
             this.queue.delete(message.guild.id);
             return message.channel.send(err);
         }
     }
-    
-    skip(message: Message) {
-        const serverQueue = this.getServerQueue(message.guild);
-        if (!message.member.voice.channel)
-            return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
-        if (!serverQueue)
-            return message.channel.send(messages.EMPTY_QUEUE);
-        serverQueue.connection.dispatcher.end();
-    }
 
-    skipTo(message: Message, positionToSkip){
-        console.log("Position to skip: ", positionToSkip)
-        const serverQueue = this.getServerQueue(message.guild);
-        if (!serverQueue)
-            return message.channel.send(messages.EMPTY_QUEUE);
-        if (!message.member.voice.channel)
-            return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
-        if (positionToSkip > serverQueue.songs.length)
-            return message.channel.send(messages.OUT_OF_QUEUE_RANGE);
-        serverQueue.songs = serverQueue.songs.slice(positionToSkip-1);
-        serverQueue.connection.dispatcher.end();
-    }
-
-    stop(message: Message) {
-        const serverQueue = this.getServerQueue(message.guild);
-        if (!message.member.voice.channel)
-            return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
-        serverQueue.songs = []
-        serverQueue.connection.dispatcher.end();
-    }
-
-    clean(message: Message){
-        const serverQueue = this.getServerQueue(message.guild);
-        if (!message.member.voice.channel)
-            return message.channel.send(messages.MEMBER_NOT_IN_VOICE_CHANNEL);
-        if(!serverQueue) return this.deleteServerQueue(message.guild);
-        serverQueue.songs = []
-        this.saveServerQueue(serverQueue);
-    }
-
-    async play(guild: Guild, song: Song) {
-        const serverQueue = this.getServerQueue(guild);
-        if (!song) {
-            console.log("No quedan videos")
-            await sleep(5000);
-            serverQueue.voiceChannel.leave();
-            this.queue.delete(guild.id);
-            return;
+    async play(song: Song) {
+        try {
+            const guild = this.message.guild;
+            const serverQueue = this.getServerQueue(guild);
+            if (!song) {
+                console.log("No quedan videos")
+                await sleep(5000);
+                serverQueue.voiceChannel.leave();
+                this.queue.delete(guild.id);
+                return;
+            }
+            if(song.src === 'spot'){
+                const ytSong = await searchAndGetYoutubeSong(song.title);
+                song.url = ytSong.url            
+            }
+            const video = await ytdl(song.url);
+            const dispatcher = serverQueue.connection
+                .play(video, { type: 'opus' })
+                .on("finish", async () => {
+                    serverQueue.songs.shift();
+                    await this.play(serverQueue.songs[0]);
+                })
+                .on("error", error => console.error(error));
+            dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+            serverQueue.textChannel.send(MESSAGES.PLAY_SONG.format(song.title));            
+        } catch (error) {
+            console.log("ERROR EN PLAY: ", error)            
         }
-        if(song.src === 'spot'){
-            const ytSong = await searchAndGetYoutubeSong(song.title);
-            song.url = ytSong.url            
-        }
-        const video = await ytdl(song.url);
-        console.log("Video encontrado!");
-        const dispatcher = serverQueue.connection
-            .play(video, { type: 'opus' })
-            .on("finish", async () => {
-                serverQueue.songs.shift();
-                await this.play(guild, serverQueue.songs[0]);
-            })
-            .on("error", error => console.error(error));
-        dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-        serverQueue.textChannel.send(messages.PLAY_SONG.format(song.title));
     }
 
-    showQueue(message: Message){
+    showQueue(){
+        const message = this.message;
         const serverQueue = this.getServerQueue(message.guild);
         console.log("Queue: ", serverQueue?.songs)
-        if(!serverQueue){ message.channel.send(messages.NOT_QUEUE_EXIST); return}
+        if(!serverQueue){ message.channel.send(MESSAGES.NOT_QUEUE_EXIST); return}
         message.channel.send(createEmbebedMessage(serverQueue.songs))
     }
 
-    addSong(serverQueue: QueueItem, song: Song){
-        serverQueue.songs.push(song);
+    addSong(serverQueue: QueueItem, ...songs: Song[]){
+        songs.map( song => serverQueue.songs.push(song));        
         this.saveServerQueue(serverQueue)
-    }    
+    }
+
+    async loadSong(args: string, serverQueue: QueueItem): Promise<String>{
+        try {
+            if(!isUrl(args)){
+                const ytSong = await searchAndGetYoutubeSong(args)
+                this.addSong(serverQueue, ytSong)
+                return ytSong.title
+            } else {
+                if(args.includes("spotify")){
+                    const idPlaylist = args.split("/").pop();
+                    const spotifySongs = await this.spotifyClient.getPlaylist(idPlaylist);
+                    const sp = spotifySongs.tracks.slice(0,PLAYLIST_LIMIT);
+                    sp.map( track => serverQueue.songs.push({ title: `${track.title} ${track.poster}`, src: "spot" }))
+                    return(spotifySongs.name)
+                } else if(args.includes("youtu")) {
+                    if(args.includes("list")){
+                        const songs = await getSongsFromPlaylist(args);
+                        this.addSong(serverQueue, ...songs.items);
+                        return(songs.title);
+                    }
+                    const ytSong = await getYoutubeSong(args);
+                    this.addSong(serverQueue, ytSong);
+                    return(ytSong.title)
+                } else {
+                    serverQueue.textChannel.send(MESSAGES.NOT_ALLOWED_ORIGIN)
+                    Promise.reject(MESSAGES.NOT_ALLOWED_ORIGIN)
+                }
+            }
+        } catch (error) {
+            console.log("LOAD ERROR: ", error)            
+        }
+    }
 
     async saveServerQueue(queue: QueueItem){
         const saveQueue: RedisSaveSongs = {
@@ -206,40 +255,6 @@ export class MusicBot {
 
     async deleteServerQueue(guild: Guild){
         await this.redisClient.delete(guild.id)
-    }
-
-    async load(args: string, serverQueue: QueueItem): Promise<String>{
-        try {
-            if(!isUrl(args)){
-                return(this.addYoutubeSong(serverQueue, args))
-            } else {
-                if(args.includes("spotify")){
-                    const idPlaylist = args.split("/").pop();
-                    const spotifySongs = await this.spotifyClient.getPlaylist(idPlaylist);
-                    const sp = spotifySongs.tracks.slice(0,10);
-                    // await Promise.all(sp.map( async (track) => {
-                    //     const ytSongName = `${track.title} ${track.poster}`
-                    //     return await this.addYoutubeSong(serverQueue, ytSongName)                  
-                    // }))
-                    sp.map( track => serverQueue.songs.push({ title: `${track.title} ${track.poster}`, src: "spot" }))
-                    return(spotifySongs.name)
-                } else if(args.includes("youtu")) {
-                    const ytSong = await getYoutubeSong(args);
-                    this.addSong(serverQueue, ytSong);
-                    return(ytSong.title)
-                }
-            }
-        } catch (error) {
-            console.log("LOAD ERROR: ", error)            
-        }
-    }
-
-    async addYoutubeSong(serverQueue: QueueItem, args: string): Promise<string>{
-        return new Promise( async resolve => {
-            const ytSong = await searchAndGetYoutubeSong(args)
-            this.addSong(serverQueue, ytSong)
-            resolve(ytSong.title)
-        })
     }
 }
 

@@ -1,5 +1,5 @@
 import {  Client, Message } from "discord.js";
-import {  MESSAGES, LISTENCHANNEL, PREFIX } from "./config";
+import {  MESSAGES, LISTENCHANNEL, PREFIX, DEDICATED_MUSIC_TEXT_CHANNEL } from "./config";
 import { MusicBot } from "./music/music";
 import { ChatBot } from "./dialogflow/brain";
 import dotenv from 'dotenv';
@@ -20,14 +20,10 @@ client.on("ready", () => {
 client.on("message", async (message: Message) => {
     try {
         if (message.author.bot) return;
-        if (!message.content.startsWith(PREFIX)) return;
-        if (getChannelName(message) != LISTENCHANNEL) return;
-
-        if (message.content.startsWith(`${PREFIX}music`)) {
-            musicBot.executeCommand(message);
-        } else {
-            await chatBot.getResponse(message);
-        }
+        else if (getChannelName(message) === DEDICATED_MUSIC_TEXT_CHANNEL) musicBot.listenDedicatedChannel(message)
+        else if ( !message.content.startsWith(PREFIX) || getChannelName(message) != LISTENCHANNEL) return;
+        else if ( message.content.startsWith(`${PREFIX}music`) ) musicBot.executeCommand(message);
+        else await chatBot.getResponse(message);
     } catch (error) {
         console.log("Error: ", error);
         message.channel.send(MESSAGES.ERROR);

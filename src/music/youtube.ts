@@ -1,10 +1,13 @@
 import ytdl from "ytdl-core";
 import ytsr from "ytsr";
-import { Song } from "../types/song";
+import ytpl from "ytpl";
+
+import { Song, YoutubePlaylist } from "../types/song";
+import { PLAYLIST_LIMIT } from "../config";
 
 export function getYoutubeLink(toSearch: string): Promise<string>{
     return new Promise( async (resolve) => {
-        const filters = await ytsr.getFilters(`${toSearch} visualizer`);
+        const filters = await ytsr.getFilters(`${toSearch}`);
         const filter = filters.get('Type').get('Video');
         const search: any = await ytsr(filter.url, { limit: 5 });
         resolve(search.items[0].url)
@@ -33,4 +36,21 @@ export async function searchAndGetYoutubeSong(toSearch): Promise<Song> {
         console.log("ERROR YT: ", error)
         
     }
+}
+
+export async function getSongsFromPlaylist(link: string): Promise<YoutubePlaylist>{
+    const playlistId = await ytpl.getPlaylistID(link);
+    const playlist = await ytpl(playlistId);
+    const songs: Song[] = [];
+    playlist.items.slice(0,PLAYLIST_LIMIT).map( s => {
+        songs.push({
+            title: s.title,
+            url: s.url,
+            src: "yt"
+        })
+    })
+    return {
+        title: playlist.title,
+        items: songs
+    };
 }

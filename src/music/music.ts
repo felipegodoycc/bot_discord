@@ -23,7 +23,6 @@ export class MusicBot {
     private getServerQueue(guild: Guild){
         console.log("ServerID: ", guild.name)
         const queue = this.queue.get(guild.id);
-        console.log("SERVER QUEUE: ", queue.songs)
         return queue
     }
 

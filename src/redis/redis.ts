@@ -6,7 +6,6 @@ export class RedisService {
     constructor(){
         this.redisClient = new RedisClient({
             host: process.env.REDIS_HOST || 'localhost',
-            port: Number(process.env.REDIS_PORT) || 6379,            
         })
         
         this.redisClient.on("ready", () => console.log("Redis conectado"));

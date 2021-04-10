@@ -7,8 +7,9 @@
     "start": "npm run build && node build/index.js",
     "dev": "nodemon",
     "lint": "eslint src/.",
-    "build": "rimraf ./build && tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rimraf ./build && npm run tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tsc": "tsc"
   },
   "repository": {
     "type": "git",

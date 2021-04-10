@@ -1,13 +1,10 @@
-import { RedisClient } from "redis";
+import { createClient, RedisClient } from "redis";
 
 export class RedisService {
     private redisClient: RedisClient;
 
     constructor(){
-        this.redisClient = new RedisClient({
-            path: process.env.REDIS_URL,
-        })
-        
+        this.redisClient = createClient(process.env.REDIS_URL);
         this.redisClient.on("ready", () => console.log("Redis conectado"));
         this.redisClient.on("error", (error) => console.error(error));
     }

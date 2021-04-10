@@ -21,8 +21,10 @@ export class MusicBot {
     }
 
     private getServerQueue(guild: Guild){
-        console.log("ServerID: ", guild.id)
-        return this.queue.get(guild.id);
+        console.log("ServerID: ", guild.name)
+        const queue = this.queue.get(guild.id);
+        console.log("SERVER QUEUE: ", queue.songs)
+        return queue
     }
 
     private setMessage(message: Message){
@@ -122,7 +124,6 @@ export class MusicBot {
     }
 
     private skipTo(positionToSkip: string | number){
-        console.log("Position to skip: ", positionToSkip)
         const message = this.message;
         const serverQueue = this.getServerQueue(message.guild);
         positionToSkip = Number(positionToSkip);
@@ -160,7 +161,6 @@ export class MusicBot {
         try {
             var connection = await message.member.voice.channel.join();
             serverQueue.connection = connection;
-            console.log("QUEUE SONGS: ", serverQueue.songs)
             await this.play(serverQueue.songs[0]);
         } catch (err) {
             console.log(err);
@@ -273,8 +273,15 @@ export class MusicBot {
     }
 
     public listenDedicatedChannel(message: Message){
+        if(this.checkIfContainCommand(message)){ return message.reply(MESSAGES.NOT_COMMAND_HERE)}
         this.setMessage(message);
         this.execute(message.content);
+    }
+
+    private checkIfContainCommand(message: Message){
+        const result = Object.keys(commands).find( com => message.content.toLocaleLowerCase().includes(commands[com]))
+        console.log("ES COMANDO? : ", result != undefined)
+        return result != undefined
     }
 }
 

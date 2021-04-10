@@ -25,5 +25,6 @@ export const MESSAGES = {
     NOT_ALLOWED_ORIGIN: 'Link mas enviado u origen no soportado',
     WELCOME_DEDICATED_MUSIC_CHANNEL: 'Bienvenido al canal dedicado de musica, solo debes enviar la cancion o link, sin ningun comando',
     DEDICATED_CHANNEL_EXIST: 'El canal dedicado ya existe',
-    DEDICATE_CHANNEL_SUCCESFULL: 'listo, busca el canal de texto {0} y reproduce musica directamente sin comandos'
+    DEDICATE_CHANNEL_SUCCESFULL: 'listo, busca el canal de texto {0} y reproduce musica directamente sin comandos',
+    NOT_COMMAND_HERE: "Aqui no van comandos webon, usa el canal del bot"
 }

@@ -6,7 +6,7 @@ export interface Song {
     src: 'yt' | 'spot';
 }
 
-export type YoutubePlaylist {
+export interface YoutubePlaylist {
     title: string;
     items: Song[];
 }

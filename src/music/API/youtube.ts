@@ -34,23 +34,29 @@ export async function searchAndGetYoutubeSong(toSearch): Promise<Song> {
         return ytSong  
     } catch (error) {
         console.log("ERROR YT: ", error)
-        
+        return Promise.reject(error)        
     }
 }
 
 export async function getSongsFromPlaylist(link: string): Promise<YoutubePlaylist>{
-    const playlistId = await ytpl.getPlaylistID(link);
-    const playlist = await ytpl(playlistId);
-    const songs: Song[] = [];
-    playlist.items.slice(0,PLAYLIST_LIMIT).map( s => {
-        songs.push({
-            title: s.title,
-            url: s.url,
-            src: "yt"
+    try {
+        const playlistId = await ytpl.getPlaylistID(link);
+        const playlist = await ytpl(playlistId);
+        const songs: Song[] = [];
+        playlist.items.slice(0,PLAYLIST_LIMIT).map( s => {
+            songs.push({
+                title: s.title,
+                url: s.url,
+                src: "yt"
+            })
         })
-    })
-    return {
-        title: playlist.title,
-        items: songs
-    };
+        return {
+            title: playlist.title,
+            items: songs
+        };
+    } catch (error) {
+        console.log("ERROR YTPL: ", error)
+        return Promise.reject(error)            
+    }
+    
 }

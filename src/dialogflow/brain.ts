@@ -58,7 +58,7 @@ export class ChatBot {
                     const msg = await moverUsuario(message, user, channel)
                     return resolve(msg)
                 } else {
-                    return reject(respuesta ? respuesta : MESSAGES.NOT_RESPONSE)
+                    return resolve(respuesta ? respuesta : MESSAGES.NOT_RESPONSE)
                 }
             } else {
                 return reject(MESSAGES.NOT_INTENT_EXIST)

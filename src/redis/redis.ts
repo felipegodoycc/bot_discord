@@ -5,7 +5,7 @@ export class RedisService {
 
     constructor(){
         this.redisClient = new RedisClient({
-            url: process.env.REDIS_URL || 'localhost',
+            url: process.env.REDIS_URL,
         })
         
         this.redisClient.on("ready", () => console.log("Redis conectado"));

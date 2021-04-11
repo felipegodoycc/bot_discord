@@ -7,5 +7,6 @@ export const commands = {
     RESUME: "resume",
     CLEAN: "clean",
     SETUP: "setup",
-    DEDICATED: "dedicated"
+    DEDICATED: "dedicated",
+    SHUFFLE: "shuffle"
 }

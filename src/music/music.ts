@@ -3,7 +3,7 @@ import ytdl from 'ytdl-core-discord';
 import { DEDICATED_MUSIC_TEXT_CHANNEL, MESSAGES, PLAYLIST_LIMIT } from '../config';
 import { QueueItem } from './types/queue';
 import { RedisSaveSongs, Song } from './types/song';
-import { createEmbebedMessage, getParamsFromMessage, isUrl, sleep } from './utils';
+import { createEmbebedMessage, getParamsFromMessage, isUrl, shuffle, sleep } from './utils';
 import '../types/string.extend';
 import { RedisService } from '../redis/redis';
 import { commands } from './commands';
@@ -57,6 +57,9 @@ export class MusicBot {
                 break;
             case commands.SETUP:
                 this.createDedicatedChannel();
+                break;
+            case commands.SHUFFLE:
+                this.shuffleQueue();
                 break;
             default:
                 message.channel.send(MESSAGES.INVALID_COMMAND);
@@ -206,8 +209,15 @@ export class MusicBot {
         message.channel.send(createEmbebedMessage(serverQueue.songs))
     }
 
+    private shuffleQueue(){
+        const message = this.message;
+        const serverQueue = this.getServerQueue(message.guild);
+        serverQueue.songs = shuffle<Song>(serverQueue.songs);
+        this.showQueue();
+    }
+
     private addSong(serverQueue: QueueItem, ...songs: Song[]){
-        songs.map( song => serverQueue.songs.push(song));        
+        songs.map( song => serverQueue.songs.push({ ...song, requestedBy: this.message.member.user.tag }));        
         this.saveServerQueue(serverQueue)
     }
 
@@ -222,7 +232,7 @@ export class MusicBot {
                     const idPlaylist = args.split("/").pop();
                     const spotifySongs = await this.spotifyClient.getPlaylist(idPlaylist);
                     const sp = spotifySongs.tracks.slice(0,PLAYLIST_LIMIT);
-                    sp.map( track => serverQueue.songs.push({ title: `${track.title} ${track.poster}`, src: "spot" }))
+                    sp.map( track => this.addSong(serverQueue, { title: `${track.title} ${track.poster}`, src: "spot" }))
                     return(spotifySongs.name)
                 } else if(args.includes("youtu")) {
                     if(args.includes("list")){

@@ -79,6 +79,7 @@ export class MusicBot {
                 return message.channel.send(MESSAGES.NOT_VOICE_PERMISSION);
             }
             if (serverQueue.playing === false) {
+                serverQueue.songs = [];
                 await this.loadSong(args, serverQueue);
                 return this.startReproduction(serverQueue)
             } else {

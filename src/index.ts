@@ -1,33 +1,40 @@
-import {  Client, Message } from "discord.js";
-import {  MESSAGES, LISTENCHANNEL, PREFIX, DEDICATED_MUSIC_TEXT_CHANNEL } from "./config";
+import { Client, Message, PresenceData } from "discord.js";
+import { MESSAGES} from "./config";
 import { MusicBot } from "./music/music";
 import { ChatBot } from "./dialogflow/brain";
 import dotenv from 'dotenv';
-import { getChannelName } from "./discord/discord-utils";
-import './types/string.extend';
-
+import { getChannelName } from "./shared/utlis/discord-utils";
+import './shared/types/string.extend';
 dotenv.config();
+import services from "./shared/services";
+
 const client: Client = new Client();
 const chatBot = new ChatBot();
-const musicBot = new MusicBot();
 
 client.login(process.env.TOKEN_DISCORD_BOT);
 
 
 client.on("ready", () => {
-    client.user.setPresence({ activity: { name: "con tu mamita", type: "PLAYING"}, status: "dnd"})
+    const botActivity: PresenceData = {
+        activity: {
+            name: process.env.BOT_STATUS
+        },
+        status: "online"
+    }
+    client.user.setPresence(botActivity)
     console.log(`Bot conectado como ${client.user.tag}`);
 });
 
 client.on("message", async (message: Message) => {
     try {
+        const server = await services.settingsService.getServer(message)
         if (message.author.bot) return;
-        else if (getChannelName(message) === DEDICATED_MUSIC_TEXT_CHANNEL) musicBot.listenDedicatedChannel(message)
-        else if ( !message.content.startsWith(PREFIX) || getChannelName(message) != LISTENCHANNEL) return;
-        else if ( message.content.startsWith(`${PREFIX}music`) ) musicBot.executeCommand(message);
+        else if (getChannelName(message) === server.config.dmtchannel) new MusicBot(services).listenDedicatedChannel(message)
+        else if ( !message.content.startsWith(server.config.prefix) || getChannelName(message) != server.config.lschannel) return;
+        else if ( message.content.startsWith(`${server.config.prefix}music`) ) new MusicBot(services).executeCommand(message);
         else await chatBot.getResponse(message);
     } catch (error) {
-        console.log("Error: ", error);
+        console.log("Error MAIN: ", error);
         message.channel.send(MESSAGES.ERROR);
     }
 });

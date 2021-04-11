@@ -30,3 +30,9 @@ export const MESSAGES = {
     NOT_CONFIG: "No es una configuracion valida",
     COMMAND_SAVE: "El comando {0} ha sido configurado con el siguiente valor \"{1}\". La configuracion actual es:"
 }
+export const SETTINGS_DESC = {
+    prefix: "Permite configurar el prefijo para el bot",
+    lschannel: "Permite configurar el canal de texto que escuchara el bot",
+    plimit: "Limite de carga de canciones para playlists",
+    dmtchannel: "Permite configurar el canal de texto para enviar canciones sin comandos",
+}

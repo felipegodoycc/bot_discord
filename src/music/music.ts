@@ -1,11 +1,11 @@
 import { Message } from 'discord.js';
 import ytdl from 'ytdl-core-discord';
-import { MESSAGES } from '../config';
+import { MESSAGES, SETTINGS_DESC } from '../config';
 import { QueueItem } from '../shared/types/queue';
 import { Song } from './types/song';
-import { createEmbebedMessageSettings, createEmbebedMessageSongs, getParamsFromMessage, isUrl, shuffle, sleep } from './utils';
+import { createEmbebedMessageCommands, createEmbebedMessageSettings, createEmbebedMessageSongs, getParamsFromMessage, isUrl, shuffle, sleep } from './utils';
 import '../shared/types/string.extend';
-import { commands } from './commands';
+import { commands, commandsDescription } from './commands';
 import { SpotifyService } from '../shared/services/spotify';
 import { getSongsFromPlaylist, getYoutubeSong, searchAndGetYoutubeSong } from './services/youtube';
 import { SettingsService } from '../shared/services/settings';
@@ -59,8 +59,12 @@ export class MusicBot {
             case commands.SETTINGS:
                 this.setSettings(request);
                 break;
+            case commands.COMMANDS:
+                this.showCommands();
+                break
             default:
                 message.channel.send(MESSAGES.INVALID_COMMAND);
+                this.showCommands();
                 break;
         }
         await this.settingsService.saveServerQueue(this.serverQueue);
@@ -270,7 +274,11 @@ export class MusicBot {
     }
 
     private showSettings(){
-        this.message.channel.send(createEmbebedMessageSettings(this.serverQueue.config))
+        this.message.channel.send(createEmbebedMessageSettings(this.serverQueue.config, SETTINGS_DESC))
+    }
+
+    private showCommands(){
+        this.message.channel.send(createEmbebedMessageCommands(commands, commandsDescription));
     }
 }
 

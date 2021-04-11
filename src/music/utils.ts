@@ -1,5 +1,4 @@
 import { EmbedField, Message, MessageEmbed } from "discord.js";
-import { ConfigServer } from "../shared/types/queue";
 import { Song } from "./types/song";
 
 export function isUrl(data: string): Boolean{
@@ -18,13 +17,25 @@ export function createEmbebedMessageSongs(songs: Song[]): MessageEmbed {
     return embed;
 }
 
-export function createEmbebedMessageSettings(config: ConfigServer): MessageEmbed {
+export function createEmbebedMessageSettings(config, desc): MessageEmbed {
     const settingsValue: Array<EmbedField> = [];
     Object.keys(config).map( (cf) =>{
-        settingsValue.push({ name: cf, value: config[cf], inline: false })
+        const com = `${cf} <valor>`
+        settingsValue.push({ name: com, value: desc[cf], inline: false })
     })
     const embed = new MessageEmbed()
         .setTitle(`Configuracion actual del servidor`)
+        .addFields(settingsValue);
+    return embed;
+}
+
+export function createEmbebedMessageCommands(config, desc): MessageEmbed {
+    const settingsValue: Array<EmbedField> = [];
+    Object.keys(config).map( (cf) =>{
+        settingsValue.push({ name: config[cf], value: desc[cf], inline: false })
+    })
+    const embed = new MessageEmbed()
+        .setTitle(`Comandos bot musica`)
         .addFields(settingsValue);
     return embed;
 }

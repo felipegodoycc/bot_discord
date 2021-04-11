@@ -3,8 +3,8 @@ import { MESSAGES } from '../config';
 import { v4 } from 'uuid';
 import { Message } from 'discord.js';
 import { google } from '@google-cloud/dialogflow/build/protos/protos';
-import { getChannelFromResponse, getMention, moverUsuario } from '../discord/discord-utils';
-import '../types/string.extend';
+import { getChannelFromResponse, getMention, moverUsuario } from '../shared/utlis/discord-utils';
+import '../shared/types/string.extend';
 
 export class ChatBot {
     private uuid: string;

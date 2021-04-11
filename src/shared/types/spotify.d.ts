@@ -9,4 +9,7 @@ export interface TokenAccessResponse {
 export interface SpotifyTrack extends Song {
     loaded: boolean;
     trackId: string;
+    track: string;
+    poster: string;
+    title: string;
 }

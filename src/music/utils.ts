@@ -1,11 +1,12 @@
 import { EmbedField, Message, MessageEmbed } from "discord.js";
+import { ConfigServer } from "../shared/types/queue";
 import { Song } from "./types/song";
 
 export function isUrl(data: string): Boolean{
     return /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(data);
 }
 
-export function createEmbebedMessage(songs: Song[]): MessageEmbed {
+export function createEmbebedMessageSongs(songs: Song[]): MessageEmbed {
     const songsList : Array<EmbedField> = []
     songs.map( (item) =>{
         const content = `Titulo: ${item.title} - Solicitado por: ${item.requestedBy}`
@@ -14,6 +15,17 @@ export function createEmbebedMessage(songs: Song[]): MessageEmbed {
     const embed = new MessageEmbed()
         .setTitle("Lista de canciones en la cola")
         .addFields(songsList);
+    return embed;
+}
+
+export function createEmbebedMessageSettings(config: ConfigServer): MessageEmbed {
+    const settingsValue: Array<EmbedField> = [];
+    Object.keys(config).map( (cf) =>{
+        settingsValue.push({ name: cf, value: config[cf], inline: false })
+    })
+    const embed = new MessageEmbed()
+        .setTitle(`Configuracion actual del servidor`)
+        .addFields(settingsValue);
     return embed;
 }
 

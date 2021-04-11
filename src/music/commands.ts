@@ -8,5 +8,6 @@ export const commands = {
     CLEAN: "clean",
     SETUP: "setup",
     DEDICATED: "dedicated",
-    SHUFFLE: "shuffle"
+    SHUFFLE: "shuffle",
+    SETTINGS: "settings"
 }

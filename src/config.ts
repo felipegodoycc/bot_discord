@@ -28,5 +28,5 @@ export const MESSAGES = {
     DEDICATE_CHANNEL_SUCCESFULL: 'listo, busca el canal de texto {0} y reproduce musica directamente sin comandos',
     NOT_COMMAND_HERE: "Aqui no van comandos webon, usa el canal del bot",
     NOT_CONFIG: "No es una configuracion valida",
-    COMMAND_SAVE: "El comando {0} ha sido configurado con el siguiente valor {1}"
+    COMMAND_SAVE: "El comando {0} ha sido configurado con el siguiente valor \"{1}\". La configuracion actual es:"
 }

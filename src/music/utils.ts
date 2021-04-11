@@ -7,7 +7,10 @@ export function isUrl(data: string): Boolean{
 
 export function createEmbebedMessage(songs: Song[]): MessageEmbed {
     const songsList : Array<EmbedField> = []
-    songs.map( (item) => songsList.push({ name: songsList.length.toString(), value: item.title, inline: false }))
+    songs.map( (item) =>{
+        const content = `Titulo: ${item.title} - Solicitado por: ${item.requestedBy}`
+        songsList.push({ name: songsList.length.toString(), value: content, inline: false })
+    })
     const embed = new MessageEmbed()
         .setTitle("Lista de canciones en la cola")
         .addFields(songsList);
@@ -29,4 +32,12 @@ export function getParamsFromMessage(message: Message){
         command,
         request: resto.join(' ')
     }
+}
+
+export function shuffle<T>(array: Array<T>): Array<T> {
+    for (let i = array.length - 1; i > 0; i--) {
+      let j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array
 }

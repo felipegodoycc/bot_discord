@@ -7,6 +7,8 @@ export class RedisService {
         this.redisClient = createClient(process.env.REDIS_URL);
         this.redisClient.on("ready", () => console.log("Redis conectado"));
         this.redisClient.on("error", (error) => console.error(error));
+        // this.redisClient.flushdb();
+        // this.redisClient.flushall();
     }
 
     set(key: string, data: string): Promise<string>{

@@ -1,6 +1,6 @@
 import { google } from "@google-cloud/dialogflow/build/protos/protos";
 import { Channel, GuildChannel, Message, MessageMentions, UserResolvable } from "discord.js"
-import { MESSAGES } from "../config";
+import { MESSAGES } from "../../config";
 
 export function getChannelInfo(message: Message): GuildChannel {
     const idChannel = message.channel.id

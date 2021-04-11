@@ -1,8 +1,8 @@
-export const PREFIX = '!'
-export const LISTENCHANNEL = 'test-bot'
-export const GENERALCHANNEL = 'general'
-export const PLAYLIST_LIMIT = 15;
-export const DEDICATED_MUSIC_TEXT_CHANNEL = 'music-bot-dedicated'
+export const DEFAULT_PREFIX = '!'
+export const DEFAULT_LISTENCHANNEL = 'test-bot'
+export const DEFAULT_GENERALCHANNEL = 'general'
+export const DEFAULT_PLAYLIST_LIMIT = 15;
+export const DEFAULT_DEDICATED_MUSIC_TEXT_CHANNEL = 'music-bot-dedicated'
 export const MESSAGES = {
     INVALID_COMMAND: 'Debes ingresar un comando valido :( !',
     MOVE_SUCCESS: 'Listo, movido',
@@ -26,5 +26,7 @@ export const MESSAGES = {
     WELCOME_DEDICATED_MUSIC_CHANNEL: 'Bienvenido al canal dedicado de musica, solo debes enviar la cancion o link, sin ningun comando',
     DEDICATED_CHANNEL_EXIST: 'El canal dedicado ya existe',
     DEDICATE_CHANNEL_SUCCESFULL: 'listo, busca el canal de texto {0} y reproduce musica directamente sin comandos',
-    NOT_COMMAND_HERE: "Aqui no van comandos webon, usa el canal del bot"
+    NOT_COMMAND_HERE: "Aqui no van comandos webon, usa el canal del bot",
+    NOT_CONFIG: "No es una configuracion valida",
+    COMMAND_SAVE: "El comando {0} ha sido configurado con el siguiente valor {1}"
 }

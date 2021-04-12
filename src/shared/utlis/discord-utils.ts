@@ -33,7 +33,8 @@ export function moverUsuario(message: Message, user: UserResolvable, channel: Ch
 export function getChannelFromResponse(message: Message, response: google.cloud.dialogflow.v2.IDetectIntentResponse ) : Promise<Channel> {
     return new Promise((resolve, reject) => {
         const nameChannel = response.queryResult.parameters.fields.salaDiscord.stringValue.replace('canal ','');
-        const channel = message.guild.channels.cache.find( (channel: { name: any; }) => channel.name === nameChannel.trim() );    
+        console.log("NAME CHANNEL: ", nameChannel)
+        const channel = message.guild.channels.cache.find( (channel) => channel.name.toLowerCase() === nameChannel.trim().toLowerCase() );    
         if (!channel) reject(MESSAGES.NOT_FOUND_CHANNEL)
         else resolve(channel)
     })

@@ -263,10 +263,12 @@ export class MusicBot {
     private setSettings(request: string){
         const [ config, value] = request.split(" ");
         if(!config) return this.showSettings();
-        if(!value) return this.message.channel.send(MESSAGES.NOT_CONFIG)
         const configServer = this.serverQueue.config;
         const result = Object.keys(configServer).find( c => c.toLowerCase() === config)
-        if(!result || value.length > 1){ return this.message.channel.send(MESSAGES.NOT_CONFIG)}
+        if(!result || 
+            !value ||
+            (config === 'prefix' && value.length > 1 || configServer.prefix === value) ||
+            (config === 'plimit' && isNaN(parseInt(value)) || parseInt(value) < 0 || parseInt(value) > 1000 )){ return this.message.channel.send(MESSAGES.NOT_CONFIG) }
         this.serverQueue.config[config] = value;
         this.message.reply(MESSAGES.COMMAND_SAVE.format(config, value))
         this.showSettings()

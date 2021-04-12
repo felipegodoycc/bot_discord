@@ -205,7 +205,8 @@ export class MusicBot {
 
     private async loadSong(args: string, serverQueue: QueueItem): Promise<String>{
         try {
-            if(!isUrl(args)){
+            const result = isUrl(args)
+            if(!result){
                 const ytSong = await searchAndGetYoutubeSong(args)
                 this.addSong(serverQueue, ytSong)
                 return ytSong.title
@@ -262,12 +263,10 @@ export class MusicBot {
     private setSettings(request: string){
         const [ config, value] = request.split(" ");
         if(!config) return this.showSettings();
-        if(!value){
-            return this.message.channel.send(MESSAGES.NOT_CONFIG)
-        }
+        if(!value) return this.message.channel.send(MESSAGES.NOT_CONFIG)
         const configServer = this.serverQueue.config;
         const result = Object.keys(configServer).find( c => c.toLowerCase() === config)
-        if(!result){ return this.message.channel.send(MESSAGES.NOT_CONFIG)}
+        if(!result || value.length > 1){ return this.message.channel.send(MESSAGES.NOT_CONFIG)}
         this.serverQueue.config[config] = value;
         this.message.reply(MESSAGES.COMMAND_SAVE.format(config, value))
         this.showSettings()
@@ -278,7 +277,7 @@ export class MusicBot {
     }
 
     private showCommands(){
-        this.message.channel.send(createEmbebedMessageCommands(commands, commandsDescription));
+        this.message.channel.send(createEmbebedMessageCommands(commands, commandsDescription, this.serverQueue.config.prefix));
     }
 }
 

@@ -13,16 +13,16 @@ export const commands = {
     COMMANDS: "commands"
 }
 export const commandsDescription = {
-    PLAY: "Permite reproducir una cancion o playlist segun busqueda o link",
-    SKIP: "Permite saltar a la siguiente cancion en la cola",
-    STOP: "Detiene reproduccion actual",
-    GET_QUEUE: "Muestra cola de reproduccion",
-    SKIP_TO: "Permite saltar a un elemento de la cola",
-    RESUME: "Continua con la lista guardada anteriormente",
-    CLEAN: "Limmpia lista de reproduccion",
-    SETUP: "Configura canal para reproducir canciones sin comandos",
+    PLAY: "Permite reproducir una cancion o playlist segun busqueda o link. Ejemplo: {0}music {1} sacame la verga lupe",
+    SKIP: "Permite saltar a la siguiente cancion en la cola. Ejemplo: {0}music {1}",
+    STOP: "Detiene reproduccion actual. Ejemplo: {0}music {1}",
+    GET_QUEUE: "Muestra cola de reproduccion. Ejemplo: {0}music {1}",
+    SKIP_TO: "Permite saltar a un elemento de la cola. Ejemplo: {0}music {1} 2",
+    RESUME: "Continua con la lista guardada anteriormente. Ejemplo: {0}music {1}",
+    CLEAN: "Limmpia lista de reproduccion. Ejemplo: {0}music {1}",
+    SETUP: "Configura canal para reproducir canciones sin comandos. Ejemplo: {0}music {1}",
     DEDICATED: "NA",
-    SHUFFLE: "Realiza mix aleatorio en la cola de reproduccion",
-    SETTINGS: "Permimite ver configuracion del servidor y/o setear valores propios",
-    COMMANDS: "Permite ver comandos disponibles"
+    SHUFFLE: "Realiza mix aleatorio en la cola de reproduccion. Ejemplo: {0}music {1}",
+    SETTINGS: "Permimite ver configuracion del servidor y/o setear valores propios. Ejemplo: {0}music {1}",
+    COMMANDS: "Permite ver comandos disponibles. Ejemplo: {0}music {1}"
 }

@@ -3,7 +3,6 @@ import ytsr from "ytsr";
 import ytpl from "ytpl";
 
 import { Song, YoutubePlaylist } from "../types/song";
-import { PLAYLIST_LIMIT } from "../../config";
 
 export function getYoutubeLink(toSearch: string): Promise<string>{
     return new Promise( async (resolve) => {
@@ -43,7 +42,7 @@ export async function getSongsFromPlaylist(link: string): Promise<YoutubePlaylis
         const playlistId = await ytpl.getPlaylistID(link);
         const playlist = await ytpl(playlistId);
         const songs: Song[] = [];
-        playlist.items.slice(0,PLAYLIST_LIMIT).map( s => {
+        playlist.items.map( s => {
             songs.push({
                 title: s.title,
                 url: s.url,

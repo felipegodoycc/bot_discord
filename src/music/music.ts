@@ -1,91 +1,80 @@
-import { Guild, Message } from 'discord.js';
+import { Message } from 'discord.js';
 import ytdl from 'ytdl-core-discord';
-import { DEDICATED_MUSIC_TEXT_CHANNEL, MESSAGES, PLAYLIST_LIMIT } from '../config';
-import { QueueItem } from './types/queue';
-import { RedisSaveSongs, Song } from './types/song';
-import { createEmbebedMessage, getParamsFromMessage, isUrl, shuffle, sleep } from './utils';
-import '../types/string.extend';
-import { RedisService } from '../redis/redis';
-import { commands } from './commands';
-import { SpotifyService } from './API/spotify';
-import { getSongsFromPlaylist, getYoutubeSong, searchAndGetYoutubeSong } from './API/youtube';
-
+import { MESSAGES, SETTINGS_DESC } from '../config';
+import { QueueItem } from '../shared/types/queue';
+import { Song } from './types/song';
+import { createEmbebedMessageCommands, createEmbebedMessageSettings, createEmbebedMessageSongs, getParamsFromMessage, isUrl, shuffle, sleep } from './utils';
+import '../shared/types/string.extend';
+import { commands, commandsDescription } from './commands';
+import { SpotifyService } from '../shared/services/spotify';
+import { getSongsFromPlaylist, getYoutubeSong, searchAndGetYoutubeSong } from './services/youtube';
+import { SettingsService } from '../shared/services/settings';
 export class MusicBot {
+    private spotifyClient: SpotifyService;
+    private message: Message;
+    private settingsService: SettingsService;
+    private serverQueue: QueueItem;
 
-    private queue:Map<string, QueueItem> = new Map<string, QueueItem>();;
-    private redisClient: RedisService = new RedisService();
-    private spotifyClient: SpotifyService = new SpotifyService();
-    private message: Message = null;
-
-    constructor(){
+    constructor(services){
+        this.spotifyClient = services.spotifyService;
+        this.settingsService = services.settingsService
     }
 
-    private getServerQueue(guild: Guild){
-        console.log("ServerID: ", guild.name)
-        const queue = this.queue.get(guild.id);
-        return queue
-    }
-
-    private setMessage(message: Message){
+    private async setMessageAndServer(message: Message){
         this.message = message;
+        this.serverQueue = await this.settingsService.getServer(message)
     }
 
-    executeCommand(message: Message){
-        this.setMessage(message)
+    async executeCommand(message: Message){
+        await this.setMessageAndServer(message);
         const { command, request } = getParamsFromMessage(message);
         switch (command) {
             case commands.PLAY:
-                this.execute(request);
+                await this.execute(request);
                 break;
             case commands.SKIP:
-                this.skip();
+                await this.skip();
                 break;
             case commands.STOP:
-                this.stop();
+                await this.stop();
                 break;
             case commands.GET_QUEUE:
-                this.showQueue();
+                await this.showQueue();
                 break;
             case commands.SKIP_TO:
-                this.skipTo(request);
+                await this.skipTo(request);
                 break;
             case commands.RESUME:
-                this.resume();
+                await this.resume();
                 break;
             case commands.CLEAN:
-                this.clean();
+                await this.clean();
                 break;
             case commands.SETUP:
-                this.createDedicatedChannel();
+                await this.createDedicatedChannel();
                 break;
             case commands.SHUFFLE:
-                this.shuffleQueue();
+                await this.shuffleQueue();
                 break;
+            case commands.SETTINGS:
+                this.setSettings(request);
+                break;
+            case commands.COMMANDS:
+                this.showCommands();
+                break
             default:
                 message.channel.send(MESSAGES.INVALID_COMMAND);
+                this.showCommands();
                 break;
         }
-    }
-
-    private initializeServerQeue(): QueueItem{
-        const message = this.message;
-        const queueContruct: QueueItem = {
-            textChannel: message.channel,
-            voiceChannel: message.member.voice.channel,
-            connection: null,
-            songs: [],
-            volume: 5,
-            playing: true,
-            guild: message.guild
-        };
-        this.queue.set(message.guild.id, queueContruct);
-        return queueContruct         
+        await this.settingsService.saveServerQueue(this.serverQueue);
     }
 
     private async execute(args: string) {
         const message = this.message;
+        const serverQueue = this.serverQueue;
+        console.log("Server: ", serverQueue)
         try {
-            const serverQueue = this.getServerQueue(message.guild);
     
             const voiceChannel = message.member.voice.channel;
             if (!voiceChannel) return message.channel.send(MESSAGES.NOT_VOICE_CHANNEL);
@@ -93,10 +82,10 @@ export class MusicBot {
             if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
                 return message.channel.send(MESSAGES.NOT_VOICE_PERMISSION);
             }
-            if (!serverQueue) {
-                const queueContruct: QueueItem = this.initializeServerQeue();
-                await this.loadSong(args, queueContruct);
-                return this.startReproduction(queueContruct)
+            if (serverQueue.playing === false) {
+                serverQueue.songs = [];
+                await this.loadSong(args, serverQueue);
+                return this.startReproduction(serverQueue)
             } else {
                 const song = await this.loadSong(args, serverQueue);
                 return message.channel.send(MESSAGES.ADD_SONG.format(song));
@@ -107,17 +96,14 @@ export class MusicBot {
     }
 
     private async resume() {
-        const message = this.message;
-        const songs = await this.loadServerQueue(message.guild);
-        const serverQueue = this.initializeServerQeue();
-        serverQueue.songs = songs;
+        const serverQueue = this.serverQueue;
         this.startReproduction(serverQueue);
         this.showQueue();
     }
     
-    private skip() {
+    private async skip() {
         const message = this.message;
-        const serverQueue = this.getServerQueue(message.guild);
+        const serverQueue = this.serverQueue;
         if (!message.member.voice.channel)
             return message.channel.send(MESSAGES.MEMBER_NOT_IN_VOICE_CHANNEL);
         if (!serverQueue)
@@ -125,12 +111,10 @@ export class MusicBot {
         serverQueue.connection.dispatcher.end();
     }
 
-    private skipTo(positionToSkip: string | number){
+    private async skipTo(positionToSkip: string | number){
         const message = this.message;
-        const serverQueue = this.getServerQueue(message.guild);
+        const serverQueue = this.serverQueue;
         positionToSkip = Number(positionToSkip);
-        if (!serverQueue)
-            return message.channel.send(MESSAGES.EMPTY_QUEUE);
         if (!message.member.voice.channel)
             return message.channel.send(MESSAGES.MEMBER_NOT_IN_VOICE_CHANNEL);
         if (positionToSkip > serverQueue.songs.length)
@@ -139,47 +123,46 @@ export class MusicBot {
         serverQueue.connection.dispatcher.end();
     }
 
-    private stop() {
+    private async stop() {
         const message = this.message;
-        const serverQueue = this.getServerQueue(message.guild);
+        const serverQueue = this.serverQueue;
         if (!message.member.voice.channel)
             return message.channel.send(MESSAGES.MEMBER_NOT_IN_VOICE_CHANNEL);
-        serverQueue.songs = []
+        serverQueue.songs = [];
         serverQueue.connection.dispatcher.end();
+        serverQueue.playing = false;
     }
 
-    private clean(){
+    private async clean(){
         const message = this.message;
-        const serverQueue = this.getServerQueue(message.guild);
+        const serverQueue = this.serverQueue;
         if (!message.member.voice.channel)
             return message.channel.send(MESSAGES.MEMBER_NOT_IN_VOICE_CHANNEL);
-        if(!serverQueue) return this.deleteServerQueue(message.guild);
-        serverQueue.songs = []
-        this.saveServerQueue(serverQueue);
+        if(!serverQueue) return this.settingsService.deleteServerQueue(message.guild);
+        this.serverQueue.songs = []
     }
 
     private async startReproduction(serverQueue: QueueItem){
         const message = this.message;
         try {
             var connection = await message.member.voice.channel.join();
-            serverQueue.connection = connection;
+            serverQueue.connection = connection
+            serverQueue.playing = true;
             await this.play(serverQueue.songs[0]);
         } catch (err) {
             console.log(err);
-            this.queue.delete(message.guild.id);
             return message.channel.send(err);
         }
     }
 
     private async play(song: Song) {
         try {
-            const guild = this.message.guild;
-            const serverQueue = this.getServerQueue(guild);
+            const serverQueue = this.serverQueue;
             if (!song) {
                 console.log("No quedan videos")
                 await sleep(5000);
+                serverQueue.playing = false;
                 serverQueue.voiceChannel.leave();
-                this.queue.delete(guild.id);
                 return;
             }
             if(song.src === 'spot'){
@@ -201,29 +184,29 @@ export class MusicBot {
         }
     }
 
-    private showQueue(){
+    private async showQueue(){
         const message = this.message;
-        const serverQueue = this.getServerQueue(message.guild);
+        const serverQueue = this.serverQueue;
         console.log("Queue: ", serverQueue?.songs)
         if(!serverQueue){ message.channel.send(MESSAGES.NOT_QUEUE_EXIST); return}
-        message.channel.send(createEmbebedMessage(serverQueue.songs))
+        message.channel.send(createEmbebedMessageSongs(serverQueue.songs))
     }
 
-    private shuffleQueue(){
-        const message = this.message;
-        const serverQueue = this.getServerQueue(message.guild);
+    private async shuffleQueue(){
+        const serverQueue = this.serverQueue;
         serverQueue.songs = shuffle<Song>(serverQueue.songs);
         this.showQueue();
     }
 
     private addSong(serverQueue: QueueItem, ...songs: Song[]){
         songs.map( song => serverQueue.songs.push({ ...song, requestedBy: this.message.member.user.tag }));        
-        this.saveServerQueue(serverQueue)
+        this.settingsService.saveServerQueue(serverQueue)
     }
 
     private async loadSong(args: string, serverQueue: QueueItem): Promise<String>{
         try {
-            if(!isUrl(args)){
+            const result = isUrl(args)
+            if(!result){
                 const ytSong = await searchAndGetYoutubeSong(args)
                 this.addSong(serverQueue, ytSong)
                 return ytSong.title
@@ -231,13 +214,13 @@ export class MusicBot {
                 if(args.includes("spotify")){
                     const idPlaylist = args.split("/").pop();
                     const spotifySongs = await this.spotifyClient.getPlaylist(idPlaylist);
-                    const sp = spotifySongs.tracks.slice(0,PLAYLIST_LIMIT);
+                    const sp = spotifySongs.tracks.slice(0,serverQueue.config.plimit);
                     sp.map( track => this.addSong(serverQueue, { title: `${track.title} ${track.poster}`, src: "spot" }))
                     return(spotifySongs.name)
                 } else if(args.includes("youtu")) {
                     if(args.includes("list")){
                         const songs = await getSongsFromPlaylist(args);
-                        this.addSong(serverQueue, ...songs.items);
+                        this.addSong(serverQueue, ...songs.items.slice(0, this.serverQueue.config.plimit));
                         return(songs.title);
                     }
                     const ytSong = await getYoutubeSong(args);
@@ -253,44 +236,50 @@ export class MusicBot {
         }
     }
 
-    private async saveServerQueue(queue: QueueItem){
-        const saveQueue: RedisSaveSongs = {
-            songs: queue.songs
-        }
-        await this.redisClient.setObject(queue.guild.id, saveQueue)
-    }
-    
-    private async loadServerQueue(guild: Guild){
-        const { songs } = await this.redisClient.getObject<RedisSaveSongs>(guild.id);
-        return songs;
-    }
-
-    private async deleteServerQueue(guild: Guild){
-        await this.redisClient.delete(guild.id)
-    }
-
     private async createDedicatedChannel(): Promise<void>{
         const server = this.message.guild;
-        if(server.channels.cache.find( ch => ch.name === DEDICATED_MUSIC_TEXT_CHANNEL)){
+        if(server.channels.cache.find( ch => ch.name === this.serverQueue.config.dmtchannel)){
             this.message.reply(MESSAGES.DEDICATED_CHANNEL_EXIST);
             return;
         }
-        const newChannel = await server.channels.create(DEDICATED_MUSIC_TEXT_CHANNEL, { type: 'text', reason: 'Porque si' });
+        const newChannel = await server.channels.create(this.serverQueue.config.dmtchannel, { type: 'text', reason: 'Porque si' });
         this.message.reply(MESSAGES.DEDICATE_CHANNEL_SUCCESFULL.format(newChannel))
         newChannel.send(MESSAGES.WELCOME_DEDICATED_MUSIC_CHANNEL);
         return;
     }
 
-    public listenDedicatedChannel(message: Message){
+    public async listenDedicatedChannel(message: Message){
         if(this.checkIfContainCommand(message)){ return message.reply(MESSAGES.NOT_COMMAND_HERE)}
-        this.setMessage(message);
+        await this.setMessageAndServer(message);
         this.execute(message.content);
     }
 
     private checkIfContainCommand(message: Message){
-        const result = Object.keys(commands).find( com => message.content.toLocaleLowerCase().includes(commands[com]))
+        const result = Object.keys(commands).find( com => message.content.toLocaleLowerCase().startsWith(commands[com]))
         console.log("ES COMANDO? : ", result != undefined)
         return result != undefined
+    }
+
+    private setSettings(request: string){
+        const [ config, value] = request.split(" ");
+        if(!config) return this.showSettings();
+        const configServer = this.serverQueue.config;
+        const result = Object.keys(configServer).find( c => c.toLowerCase() === config)
+        if(!result || 
+            !value ||
+            (config === 'prefix' && value.length > 1 || configServer.prefix === value) ||
+            (config === 'plimit' && isNaN(parseInt(value)) || parseInt(value) < 0 || parseInt(value) > 1000 )){ return this.message.channel.send(MESSAGES.NOT_CONFIG) }
+        this.serverQueue.config[config] = value;
+        this.message.reply(MESSAGES.COMMAND_SAVE.format(config, value))
+        this.showSettings()
+    }
+
+    private showSettings(){
+        this.message.channel.send(createEmbebedMessageSettings(this.serverQueue.config, SETTINGS_DESC))
+    }
+
+    private showCommands(){
+        this.message.channel.send(createEmbebedMessageCommands(commands, commandsDescription, this.serverQueue.config.prefix));
     }
 }
 

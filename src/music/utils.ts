@@ -1,4 +1,5 @@
 import { EmbedField, Message, MessageEmbed } from "discord.js";
+import { ConfigServer } from "../shared/types/queue";
 import { Song } from "./types/song";
 
 export function isUrl(data: string): Boolean{
@@ -17,11 +18,12 @@ export function createEmbebedMessageSongs(songs: Song[]): MessageEmbed {
     return embed;
 }
 
-export function createEmbebedMessageSettings(config, desc): MessageEmbed {
+export function createEmbebedMessageSettings(config: ConfigServer, desc): MessageEmbed {
     const settingsValue: Array<EmbedField> = [];
     Object.keys(config).map( (cf) =>{
         const com = `${cf} <valor>`
-        settingsValue.push({ name: com, value: desc[cf], inline: false })
+        const description = `${desc[cf]} - Actual: ${config[cf]}`
+        settingsValue.push({ name: com, value: description, inline: false })
     })
     const embed = new MessageEmbed()
         .setTitle(`Configuracion actual del servidor`)
@@ -29,10 +31,11 @@ export function createEmbebedMessageSettings(config, desc): MessageEmbed {
     return embed;
 }
 
-export function createEmbebedMessageCommands(config, desc): MessageEmbed {
+export function createEmbebedMessageCommands(commmands, desc, prefix): MessageEmbed {
     const settingsValue: Array<EmbedField> = [];
-    Object.keys(config).map( (cf) =>{
-        settingsValue.push({ name: config[cf], value: desc[cf], inline: false })
+    Object.keys(commmands).map( (cf) =>{
+        const description = `${String(desc[cf]).format(prefix, commmands[cf])}`
+        settingsValue.push({ name: commmands[cf], value: description, inline: false })
     })
     const embed = new MessageEmbed()
         .setTitle(`Comandos bot musica`)

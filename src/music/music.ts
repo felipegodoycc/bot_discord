@@ -27,11 +27,9 @@ export class MusicBot {
 
     async executeCommand(message: Message, _custom_commmand: string  = null, _custom_request: string = null, _custom_params:boolean = false){
         await this.setMessageAndServer(message);
-        let { command, request } = getParamsFromMessage(message);
-        if(_custom_params === true){
-            command = _custom_commmand;
-            request = _custom_request;
-        }
+        const { command, request } = _custom_params === true ? 
+                                    { command: _custom_commmand, request: _custom_request } :
+                                    getParamsFromMessage(message);
         switch (command) {
             case COMMANDS.PLAY:
                 await this.execute(request);

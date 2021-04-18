@@ -5,7 +5,7 @@ import { QueueItem } from '../shared/types/queue';
 import { Song } from './types/song';
 import { createEmbebedMessageCommands, createEmbebedMessageSettings, createEmbebedMessageSongs, getParamsFromMessage, isUrl, shuffle, sleep } from './utils';
 import '../shared/types/string.extend';
-import { commands, commandsDescription } from './commands';
+import { COMMANDS, COMMANDS_DESCRIPTION } from './commands';
 import { SpotifyService } from '../shared/services/spotify';
 import { getSongsFromPlaylist, getYoutubeSong, searchAndGetYoutubeSong } from './services/youtube';
 import { SettingsService } from '../shared/services/settings';
@@ -25,41 +25,45 @@ export class MusicBot {
         this.serverQueue = await this.settingsService.getServer(message)
     }
 
-    async executeCommand(message: Message){
+    async executeCommand(message: Message, _custom_commmand: string  = null, _custom_request: string = null, _custom_params:boolean = false){
         await this.setMessageAndServer(message);
-        const { command, request } = getParamsFromMessage(message);
+        let { command, request } = getParamsFromMessage(message);
+        if(_custom_params === true){
+            command = _custom_commmand;
+            request = _custom_request;
+        }
         switch (command) {
-            case commands.PLAY:
+            case COMMANDS.PLAY:
                 await this.execute(request);
                 break;
-            case commands.SKIP:
+            case COMMANDS.SKIP:
                 await this.skip();
                 break;
-            case commands.STOP:
+            case COMMANDS.STOP:
                 await this.stop();
                 break;
-            case commands.GET_QUEUE:
+            case COMMANDS.GET_QUEUE:
                 await this.showQueue();
                 break;
-            case commands.SKIP_TO:
+            case COMMANDS.SKIP_TO:
                 await this.skipTo(request);
                 break;
-            case commands.RESUME:
+            case COMMANDS.RESUME:
                 await this.resume();
                 break;
-            case commands.CLEAN:
+            case COMMANDS.CLEAN:
                 await this.clean();
                 break;
-            case commands.SETUP:
+            case COMMANDS.SETUP:
                 await this.createDedicatedChannel();
                 break;
-            case commands.SHUFFLE:
+            case COMMANDS.SHUFFLE:
                 await this.shuffleQueue();
                 break;
-            case commands.SETTINGS:
+            case COMMANDS.SETTINGS:
                 this.setSettings(request);
                 break;
-            case commands.COMMANDS:
+            case COMMANDS.COMMANDS:
                 this.showCommands();
                 break
             default:
@@ -73,7 +77,6 @@ export class MusicBot {
     private async execute(args: string) {
         const message = this.message;
         const serverQueue = this.serverQueue;
-        console.log("Server: ", serverQueue)
         try {
     
             const voiceChannel = message.member.voice.channel;
@@ -255,7 +258,7 @@ export class MusicBot {
     }
 
     private checkIfContainCommand(message: Message){
-        const result = Object.keys(commands).find( com => message.content.toLocaleLowerCase().startsWith(commands[com]))
+        const result = Object.keys(COMMANDS).find( com => message.content.toLocaleLowerCase().startsWith(COMMANDS[com]))
         console.log("ES COMANDO? : ", result != undefined)
         return result != undefined
     }
@@ -279,7 +282,7 @@ export class MusicBot {
     }
 
     private showCommands(){
-        this.message.channel.send(createEmbebedMessageCommands(commands, commandsDescription, this.serverQueue.config.prefix));
+        this.message.channel.send(createEmbebedMessageCommands(COMMANDS, COMMANDS_DESCRIPTION, this.serverQueue.config.prefix));
     }
 }
 

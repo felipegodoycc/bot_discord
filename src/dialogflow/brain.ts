@@ -5,16 +5,20 @@ import { Message } from 'discord.js';
 import { google } from '@google-cloud/dialogflow/build/protos/protos';
 import { getChannelFromResponse, getMention, moverUsuario } from '../shared/utlis/discord-utils';
 import '../shared/types/string.extend';
+import { COMMANDS } from '../music/commands';
+import { MusicBot } from '../music/music';
 
 export class ChatBot {
     private uuid: string;
     private dialogFlowClient: SessionsClient;
     private sessionPath:string;
+    private services = null;
 
-    constructor(){
+    constructor(services){
         this.uuid = v4();
         this.dialogFlowClient = new SessionsClient();
         this.sessionPath = this.dialogFlowClient.projectAgentSessionPath(process.env.DIALOG_FLOW_PROJECT, this.uuid );
+        this.services = services;
         console.log("DialogFlow inicializado")
     }
 
@@ -29,7 +33,8 @@ export class ChatBot {
                         text: cleanMessage,
                         languageCode: 'es-ES',
                     }
-                }
+                },
+
             };
             
             const [response] = await this.dialogFlowClient.detectIntent(dialogflowRequest);
@@ -43,21 +48,55 @@ export class ChatBot {
 
     actions(message: Message, response: google.cloud.dialogflow.v2.IDetectIntentResponse){
         return new Promise( async (resolve, reject) => {
-            const { intent } = response.queryResult;
+            const { intent, parameters } = response.queryResult;
             const respuesta = response.queryResult.fulfillmentText;
-
             if (intent) {
-                if (intent.displayName === 'discord.mover') {
-                    const user = getMention(message.mentions, 'users');
-                    const channel = await getChannelFromResponse(message, response)
-                    const msg = await moverUsuario(message, user, channel)
-                    return resolve(msg)
-                } else if (intent.displayName === 'discord.moverme') {
-                    const user = message.author;
-                    const channel = await getChannelFromResponse(message, response)
-                    const msg = await moverUsuario(message, user, channel)
-                    return resolve(msg)
-                } else {
+                const [category, command] = intent.displayName.split('.');
+                if(category === 'discord'){
+                    if (command === 'mover') {
+                        const user = getMention(message.mentions, 'users');
+                        const channel = await getChannelFromResponse(message, response)
+                        const msg = await moverUsuario(message, user, channel)
+                        return resolve(msg)
+                    } else if (command === 'moverme') {
+                        const user = message.author;
+                        const channel = await getChannelFromResponse(message, response)
+                        const msg = await moverUsuario(message, user, channel)
+                        return resolve(msg)
+                    }
+                }
+                else if( category === 'music'){
+                    message.channel.send(MESSAGES.CALLING_MUSIC_BOT)
+                    try {
+                        const bot = new MusicBot(this.services);
+                        switch (command) {
+                            case COMMANDS.PLAY:
+                                const request = this.getParametersFields(parameters)
+                                bot.executeCommand(message, command, request, true)                    
+                                break;
+                            case COMMANDS.GET_QUEUE:
+                                bot.executeCommand(message, command, null, true)                        
+                                break;
+                            case COMMANDS.RESUME:
+                                bot.executeCommand(message, command, null, true)                                                    
+                                break;
+                            case COMMANDS.SETUP:
+                                bot.executeCommand(message, command, null, true)                                                    
+                                break;
+                            case COMMANDS.SKIP:
+                                bot.executeCommand(message, command, null, true)                            
+                                break;
+                            case COMMANDS.STOP:
+                                bot.executeCommand(message, command, null, true)                           
+                                break;                    
+                            default:
+                                break;
+                        }                      
+                    } catch (error) {
+                        return reject(MESSAGES.FAIL_MUSIC_BOT)                        
+                    }
+                }
+                else {
                     return resolve(respuesta ? respuesta : MESSAGES.NOT_RESPONSE)
                 }
             } else {
@@ -68,7 +107,21 @@ export class ChatBot {
                     
     removePrefix(text: string) {
         return text.replace('!', '')
-    }   
+    }
+
+    getParametersFields(parameters: google.protobuf.IStruct){
+        let result = [];
+        const fields = parameters.fields;
+        Object.keys(fields).map( f => {
+            if(f === 'music_commands') return
+            const field = fields[f];
+            if(field.stringValue) result.push(field.stringValue);
+            else if(field.listValue){
+                field.listValue.values.map( value => result.push(value.stringValue) )
+            }
+        })
+        return result.join(" ")
+    }
 
 }
 

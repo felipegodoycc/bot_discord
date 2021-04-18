@@ -6,6 +6,9 @@ import { google } from '@google-cloud/dialogflow/build/protos/protos';
 import { getChannelFromResponse, getMention, moverUsuario } from '../shared/utlis/discord-utils';
 import '../shared/types/string.extend';
 import { MusicBot } from '../music/music';
+import { RedisService } from '../shared/services/redis';
+import { SettingsService } from '../shared/services/settings';
+import { SpotifyService } from '../shared/services/spotify';
 
 export class ChatBot {
     private uuid: string;
@@ -13,7 +16,7 @@ export class ChatBot {
     private sessionPath:string;
     private services = null;
 
-    constructor(services){
+    constructor(services: { redisService: RedisService; settingsService: SettingsService; spotifyService: SpotifyService; }){
         this.uuid = v4();
         this.dialogFlowClient = new SessionsClient();
         this.sessionPath = this.dialogFlowClient.projectAgentSessionPath(process.env.DIALOG_FLOW_PROJECT, this.uuid );

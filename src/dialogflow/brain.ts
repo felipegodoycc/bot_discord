@@ -5,7 +5,6 @@ import { Message } from 'discord.js';
 import { google } from '@google-cloud/dialogflow/build/protos/protos';
 import { getChannelFromResponse, getMention, moverUsuario } from '../shared/utlis/discord-utils';
 import '../shared/types/string.extend';
-import { COMMANDS } from '../music/commands';
 import { MusicBot } from '../music/music';
 
 export class ChatBot {
@@ -69,29 +68,9 @@ export class ChatBot {
                     message.channel.send(MESSAGES.CALLING_MUSIC_BOT)
                     try {
                         const bot = new MusicBot(this.services);
-                        switch (command) {
-                            case COMMANDS.PLAY:
-                                const request = this.getParametersFields(parameters)
-                                bot.executeCommand(message, command, request, true)                    
-                                break;
-                            case COMMANDS.GET_QUEUE:
-                                bot.executeCommand(message, command, null, true)                        
-                                break;
-                            case COMMANDS.RESUME:
-                                bot.executeCommand(message, command, null, true)                                                    
-                                break;
-                            case COMMANDS.SETUP:
-                                bot.executeCommand(message, command, null, true)                                                    
-                                break;
-                            case COMMANDS.SKIP:
-                                bot.executeCommand(message, command, null, true)                            
-                                break;
-                            case COMMANDS.STOP:
-                                bot.executeCommand(message, command, null, true)                           
-                                break;                    
-                            default:
-                                break;
-                        }                      
+                        const request = this.getParametersFields(parameters)
+                        console.log("COMANDO: ", command, " REQUESTED: ", request)
+                        bot.executeCommand(message, command, request, true)                                         
                     } catch (error) {
                         return reject(MESSAGES.FAIL_MUSIC_BOT)                        
                     }

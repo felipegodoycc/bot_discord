@@ -1,4 +1,4 @@
-export const commands = {
+export const COMMANDS = {
     PLAY: "play",
     SKIP: "skip",
     STOP: "stop",
@@ -12,7 +12,7 @@ export const commands = {
     SETTINGS: "settings",
     COMMANDS: "commands"
 }
-export const commandsDescription = {
+export const COMMANDS_DESCRIPTION = {
     PLAY: "Permite reproducir una cancion o playlist segun busqueda o link. Ejemplo: {0}music {1} sacame la verga lupe",
     SKIP: "Permite saltar a la siguiente cancion en la cola. Ejemplo: {0}music {1}",
     STOP: "Detiene reproduccion actual. Ejemplo: {0}music {1}",

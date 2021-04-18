@@ -9,7 +9,7 @@ dotenv.config();
 import services from "./shared/services";
 
 const client: Client = new Client();
-const chatBot = new ChatBot();
+const chatBot = new ChatBot(services);
 
 client.login(process.env.TOKEN_DISCORD_BOT);
 
@@ -27,11 +27,11 @@ client.on("ready", () => {
 
 client.on("message", async (message: Message) => {
     try {
-        const server = await services.settingsService.getServer(message)
+        const { config } = await services.settingsService.getServer(message);
         if (message.author.bot) return;
-        else if (getChannelName(message) === server.config.dmtchannel) new MusicBot(services).listenDedicatedChannel(message)
-        else if ( !message.content.startsWith(server.config.prefix) || getChannelName(message) != server.config.lschannel) return;
-        else if ( message.content.startsWith(`${server.config.prefix}music`) ) new MusicBot(services).executeCommand(message);
+        else if (getChannelName(message) === config.dmtchannel) new MusicBot(services).listenDedicatedChannel(message)
+        else if (getChannelName(message) != config.lschannel) return;
+        else if ( message.content.startsWith(`${config.prefix}music`) ) new MusicBot(services).executeCommand(message);
         else await chatBot.getResponse(message);
     } catch (error) {
         console.log("Error MAIN: ", error);

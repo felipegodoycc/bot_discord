@@ -28,11 +28,10 @@ client.on("ready", () => {
 client.on("message", async (message: Message) => {
     try {
         const { config } = await services.settingsService.getServer(message);
-        if (message.author.bot) return;
+        if (message.author.bot || getChannelName(message) != config.lschannel) return;
         else if (getChannelName(message) === config.dmtchannel) new MusicBot(services).listenDedicatedChannel(message)
-        else if (getChannelName(message) != config.lschannel) return;
-        else if ( message.content.startsWith(`${config.prefix}music`) ) new MusicBot(services).executeCommand(message);
-        else await chatBot.getResponse(message);
+        else if (message.content.startsWith(`${config.prefix}music`) ) new MusicBot(services).executeCommand(message);
+        else chatBot.getResponse(message);
     } catch (error) {
         console.log("Error MAIN: ", error);
         message.channel.send(MESSAGES.ERROR);
